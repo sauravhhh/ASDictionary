@@ -7,139 +7,35 @@
   <style>
     html { box-sizing: border-box; }
     *, *:before, *:after { box-sizing: inherit; }
-    body {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      background: #fff;
-      color: #222;
-      margin: 0;
-    }
-    header {
-      padding: 2.2rem 0.8rem 1rem;
-      text-align: left;
-    }
-    .dot {
-      display: inline-block;
-      width: 12px;
-      height: 12px;
-      background: #e12d39;
-      border-radius: 50%;
-      margin-right: 12px;
-      vertical-align: middle;
-    }
-    .title {
-      font-size: 2rem;
-      font-weight: bold;
-      vertical-align: middle;
-      letter-spacing: 0.02em;
-    }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; color: #222; margin: 0;}
+    header { padding: 2.2rem 0.8rem 1rem; text-align: left;}
+    .dot { display: inline-block; width: 12px; height: 12px; background: #e12d39; border-radius: 50%; margin-right: 12px; vertical-align: middle; }
+    .title { font-size: 2rem; font-weight: bold; vertical-align: middle; letter-spacing: 0.02em;}
     .title span:last-child { color: #e12d39; }
-    .subtitle {
-      color: #888;
-      font-size: 1rem;
-      letter-spacing: 0.7px;
-      margin-left: 0.5rem;
-      margin-top: 0.6rem;
-    }
-    .container {
-      max-width: 420px;
-      margin: 2rem auto;
-      background: #fff;
-      border-radius: 10px;
-      padding: 1.5rem 1rem 0.5rem;
-      box-shadow: 0 2px 8px #efefef;
-    }
-    .search-box {
-      width: 100%;
-      font-size: 1.05rem;
-      padding: 0.85rem 1rem;
-      border: 1px solid #dedede;
-      border-radius: 7px;
-      margin-bottom: 0.8rem;
-      outline: none;
-      background: #fafbfc;
-      transition: border 0.15s;
-    }
-    .search-box:focus { border-color: #e12d39; }
-    .btn-row {
-      display: flex;
-      justify-content: flex-end;
-      gap: 0.7rem;
-      margin-bottom: 1.2rem;
-    }
-    button {
-      font-size: 1rem;
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      outline: none;
-      transition: background 0.1s;
-    }
-    .search-btn {
-      background: #e12d39;
-      color: #fff;
-    }
-    .search-btn:active,
-    .search-btn:focus { background: #b71a26; }
-    .clear-btn {
-      background: #f4f4f6;
-      color: #888;
-    }
-    .clear-btn:active,
-    .clear-btn:focus { background: #eee; }
-    .result {
-      padding-top: 0.5rem;
-    }
-    .word {
-      font-size: 1.45rem;
-      font-weight: bold;
-      margin-bottom: 0.15rem;
-      word-break: break-word;
-    }
-    .partofspeech {
-      font-size: 1.02rem;
-      color: #8d99ae;
-      margin-bottom: 0.6rem;
-      margin-top: 0rem;
-      word-break: break-word;
-    }
-    .section {
-      margin: 1rem 0 0.4rem;
-      font-weight: 600;
-      font-size: 1.07rem;
-      color: #323648;
-    }
-    .meanings {
-      margin-bottom: 0.7rem;
-      word-break: break-word;
-      font-size: 1rem;
-    }
-    .empty {
-      color: #bbb;
-      font-size: 1.08rem;
-      text-align: left;
-      margin-top: 1.3rem;
-    }
-    .footer {
-      text-align: center;
-      margin: 2.5rem 0 1rem;
-      font-size: 1rem;
-      color: #222;
-      letter-spacing: 0.02em;
-      font-weight: 500;
-    }
-    @media (max-width: 520px) {
-      .container {
-        margin: 1rem;
-        padding: 1.2rem 0.4rem 0.3rem;
-      }
-    }
+    .subtitle { color: #888; font-size: 1rem; letter-spacing: 0.7px; margin-left: 0.5rem; margin-top: 0.6rem;}
+    .container { max-width: 420px; margin: 2rem auto; background: #fff; border-radius: 10px; padding: 1.5rem 1rem 0.5rem; box-shadow: 0 2px 8px #efefef;}
+    .search-box { width: 100%; font-size: 1.05rem; padding: 0.85rem 1rem; border: 1px solid #dedede; border-radius: 7px; margin-bottom: 0.8rem; outline: none; background: #fafbfc; transition: border 0.15s;}
+    .search-box:focus { border-color: #e12d39;}
+    .btn-row { display: flex; justify-content: flex-end; gap: 0.7rem; margin-bottom: 1.2rem;}
+    button { font-size: 1rem; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; outline: none; transition: background 0.1s;}
+    .search-btn { background: #e12d39; color: #fff;}
+    .search-btn:active, .search-btn:focus { background: #b71a26; }
+    .clear-btn { background: #f4f4f6; color: #888;}
+    .clear-btn:active, .clear-btn:focus { background: #eee;}
+    .result { padding-top: 0.5rem;}
+    .word { font-size: 1.45rem; font-weight: bold; margin-bottom: 0.15rem; word-break: break-word;}
+    .partofspeech { font-size: 1.02rem; color: #8d99ae; margin-bottom: 0.6rem; margin-top: 0rem; word-break: break-word;}
+    .section { margin: 1rem 0 0.4rem; font-weight: 600; font-size: 1.07rem; color: #323648;}
+    .meanings { margin-bottom: 0.7rem; word-break: break-word; font-size: 1rem;}
+    .empty { color: #bbb; font-size: 1.08rem; text-align: left; margin-top: 1.3rem;}
+    .footer { text-align: center; margin: 2.5rem 0 1rem; font-size: 1rem; color: #222; letter-spacing: 0.02em; font-weight: 500;}
+    @media (max-width: 520px) { .container { margin: 1rem; padding: 1.2rem 0.4rem 0.3rem; } }
   </style>
 </head>
 <body>
   <header>
     <span class="dot"></span>
-    <span class="title">অসমীয়া<span>.</span></span>
+    <span class="title">অৰ্থ<span>.</span></span>
     <div class="subtitle">Assamese Dictionary</div>
   </header>
   <div class="container">
@@ -184,15 +80,9 @@
       const trimmedTerm = term.trim().toLowerCase();
       if (!trimmedTerm) return;
 
-      // Get all matches where any field (e.g. English word column, or Assamese word) exactly matches.
-      // User searches for English word; show all distinct Assamese words (with different IdeaID) on one line.
-      // This logic assumes English word is "posEng" or similar column (change as needed for your CSV).
-
-      // Find all matching entries
+      // Find entries where 'posEng' exactly matches search term (case-insensitive)
       const matches = allWords.filter(entry =>
-        Object.values(entry).some(
-          v => v && v.toString().trim().toLowerCase() === trimmedTerm
-        )
+        entry.posEng && entry.posEng.trim().toLowerCase() === trimmedTerm
       );
 
       if (matches.length === 0) {
@@ -200,33 +90,20 @@
         return;
       }
 
-      // If searching by English, find all unique Assamese for each IdeaID
-      // You can adjust the column name below (assuming 'posEng' is English part; replace as needed)
-      let assameseList = [];
-      let meaningList = [];
-      let posAsmList = [];
-      let ideaIdList = [];
-      matches.forEach(entry => {
-        if (entry.Wrd) assameseList.push(entry.Wrd.trim());
-        if (entry.Meanings) meaningList.push(entry.Meanings.trim());
-        if (entry.posAsm) posAsmList.push(entry.posAsm.trim());
-        if (entry.IdeaID) ideaIdList.push(entry.IdeaID.trim());
-      });
-
-      // Remove duplicates from Assamese list and show as comma-separated
-      const uniqueAssamese = [...new Set(assameseList)];
-      const uniqueMeanings = [...new Set(meaningList)];
-      const uniquePosAsm = [...new Set(posAsmList)];
-      const uniqueIdeaID = [...new Set(ideaIdList)];
+      // Gather unique Assamese words and meanings (removing any quote characters from meanings)
+      const assameseList = matches.map(entry => entry.Wrd.trim());
+      const meaningList = matches.map(entry =>
+        entry.Meanings ? entry.Meanings.replace(/["']/g, "").trim() : ""
+      );
+      const uniqueIdeaID = [...new Set(matches.map(entry => entry.IdeaID ? entry.IdeaID.trim() : ""))].filter(Boolean);
+      const uniquePosAsm = [...new Set(matches.map(entry => entry.posAsm ? entry.posAsm.trim() : ""))].filter(Boolean);
 
       resultDiv.innerHTML = `
         <div style="margin-bottom:1.4rem;">
-          <div class="word">${sanitize(uniqueAssamese.join(', '))}</div>
-          <div class="partofspeech">
-            ${sanitize(uniquePosAsm.join(', '))}
-          </div>
+          <div class="word">${sanitize(assameseList.join(', '))}</div>
+          <div class="partofspeech">${sanitize(uniquePosAsm.join(', '))}</div>
           <div class="section">Meanings</div>
-          <div class="meanings">${sanitize(uniqueMeanings.join('; '))}</div>
+          <div class="meanings">${sanitize(meaningList.join(', '))}</div>
           ${uniqueIdeaID.length ? `<div style="color:#bbb; font-size:0.9em; margin-top:0.8rem;">IdeaID: ${sanitize(uniqueIdeaID.join(', '))}</div>` : ""}
         </div>
       `;
