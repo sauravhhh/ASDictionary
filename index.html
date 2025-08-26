@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Assamese Dictionary</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; background: #fff; color: #222; }
+    header { padding: 2rem 1rem 1rem; text-align: left; }
+    .dot { display: inline-block; width: 12px; height: 12px; background: #e12d39; border-radius: 50%; margin-right: 12px; vertical-align: middle; }
+    .title { font-size: 2.2rem; font-weight: 600; display: inline-block; vertical-align: middle; }
+    .subtitle { color: #888; font-size: 1.1rem; letter-spacing: 1px; margin-left: 0.5rem; }
+    .container { max-width: 420px; margin: 2rem auto; background: #fff; border-radius: 10px; padding: 2rem 1.5rem; box-shadow: 0 2px 12px #eaeaea; }
+    .search-box { width: 100%; font-size: 1.1rem; padding: 1rem; border: 1px solid #dedede; border-radius: 6px; margin-bottom: 1.5rem; outline: none; }
+    .result { padding-top: 1rem; }
+    .word { font-size: 2rem; font-weight: 600; }
+    .section { margin: 1.2rem 0 0.6rem; font-weight: 600; }
+    .partofspeech { font-size: 1rem; color: #8d99ae; }
+    .meanings { margin-bottom: 1.2rem; }
+    .empty { color: #aaa; font-size: 1.1rem; margin-top:2rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <span class="dot"></span>
+    <span class="title">অসমীয়া<span style="color:#e12d39;">.</span></span>
+    <div class="subtitle">Assamese Dictionary</div>
+  </header>
+  <div class="container">
+    <input class="search-box" type="text" placeholder="Search in Assamese, English, or Meaning…" id="searchInput">
+    <div class="result" id="result"></div>
+  </div>
+  <script>
+    // Utility: Parse CSV (handles commas, trims whitespace)
+    function parseCSV(csv) {
+      let lines = csv.replaceAll('\r','').split('\n').filter(Boolean);
+      let headers = lines[0].split(',').map(h => h.trim());
+      let data = [];
+      for(let i=1; i<lines.length; i++) {
+        let row = lines[i].split(',').map(x => x.trim());
+        let entry = {};
+        for(let j=0; j<headers.length; j++) {
+          entry[headers[j]] = row[j] || '';
+        }
+        data.push(entry);
+      }
+      return data;
+    }
+
+    let allWords = [];
+    Promise.all([
+      fetch('xobdo-words-EN.csv').then(r => r.text()),
+      fetch('xobdo-words-AS.csv').then(r => r.text())
+    ]).then(([enCSV, asCSV]) => {
+      let enArr = parseCSV(enCSV);
+      let asArr = parseCSV(asCSV);
+      allWords = enArr.concat(asArr);
+    });
+
+    let resultDiv = document.getElementById('result');
+    let searchInput = document.getElementById('searchInput');
+
+    function showResult(term) {
+      resultDiv.innerHTML = "";
+      if (!term.trim()) return;
+
+      // Case-insensitive search in all columns and also in meaning inside brackets
+      term = term.toLowerCase();
+
+      // Try to match user input to both word and meaning inside bracket (e.g. 'rice' finds 'ভাত (rice)')
+      let item = allWords.find(entry =>
+        Object.values(entry).some(
+          v => v && v.toLowerCase().includes(term)
+        ) ||
+        (entry.Wrd && extractBracketContent(entry.Wrd).toLowerCase().includes(term))
+      );
+
+      if (!item) {
+        resultDiv.innerHTML = "<div class='empty'>No result found.</div>";
+        return;
+      }
+
+      resultDiv.innerHTML = `
+        <div class="word">${sanitize(entryOrEmpty(item.Wrd))}</div>
+        <div class="partofspeech">
+          ${sanitize(entryOrEmpty(item.posAsm))}${item.posEng ? ' / ' + sanitize(item.posEng) : ''}
+        </div>
+        <div class="section">Meanings</div>
+        <div class="meanings">${sanitize(entryOrEmpty(item.Meanings))}</div>
+        <div style="color:#bbb; font-size:0.9em;margin-top:1rem;">IdeaID: ${sanitize(entryOrEmpty(item.IdeaID))}</div>
+      `;
+    }
+
+    // Extracts meaning inside brackets if present
+    function extractBracketContent(str) {
+      let m = /\(([^)]+)\)/.exec(str||'');
+      return m ? m[1] : '';
+    }
+
+    function entryOrEmpty(val) { return val ? val : ''; }
+    function sanitize(str) {
+      let d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    searchInput.addEventListener('input', function() {
+      showResult(this.value.trim());
+    });
+  </script>
+</body>
+</html>
