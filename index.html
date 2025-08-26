@@ -52,29 +52,35 @@
     const clearBtn = document.getElementById('clearBtn');
     const searchBtn = document.getElementById('searchBtn');
 
-    // Robust CSV parser to handle quotes, commas, and whitespace
-    function parseCSV(csv) {
-      const lines = csv.split(/\r?\n/).filter(l => l.trim());
+    // CSV parser with robust quote/commas/fields handling
+    function parseCSV(csvText) {
+      const lines = csvText.split(/\r?\n/).filter(l => l.trim());
       if (lines.length < 2) return [];
-      const headers = lines[0].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g).map(h => h.replace(/^"|"$/g,"").trim());
+      const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g,"").trim());
       return lines.slice(1).map(line => {
-        if (!line.trim()) return null;
-        let re = /(".*?"|[^",\s]+)(?=\s*,|\s*$)/g;
+        // Parse line using simple and quoted CSV logic
         let cells = [];
-        let match;
-        while ((match = re.exec(line)) !== null) {
-          cells.push(match[0].replace(/^"|"$/g,"").trim());
+        let cell = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"' && !inQuotes) { inQuotes = true; continue; }
+          if (char === '"' && inQuotes) { inQuotes = false; continue; }
+          if (char === ',' && !inQuotes) { cells.push(cell.trim()); cell = ''; continue; }
+          cell += char;
         }
+        cells.push(cell.trim());
         while (cells.length < headers.length) cells.push("");
         let obj = {};
-        headers.forEach((h, i) => obj[h] = cells[i] || '');
+        headers.forEach((h, idx) => obj[h] = cells[idx] ? cells[idx].replace(/^"|"$/g,"").trim() : '');
         return obj;
-      }).filter(x => x && Object.keys(x).length > 0);
+      });
     }
 
+    // Fetch and parse both CSVs
     Promise.all([
-      fetch('xobdo-words-AS.csv').then(r => r.text()),
-      fetch('xobdo-words-EN.csv').then(r => r.text())
+      fetch('xobdo-words-AS.csv').then(r => r.text()).catch(() => ''),
+      fetch('xobdo-words-EN.csv').then(r => r.text()).catch(() => '')
     ]).then(([asCSV, enCSV]) => {
       const asData = parseCSV(asCSV);
       const enData = parseCSV(enCSV);
@@ -83,37 +89,39 @@
 
     function showResult(term) {
       resultDiv.innerHTML = "";
-      const trimmedTerm = term.trim();
+      const trimmedTerm = term.trim().toLowerCase();
       if (!trimmedTerm) return;
 
-      // Normalize for matching
-      const normSearch = trimmedTerm.toLowerCase();
-
-      // Find all entries where posEng EXACTLY matches search term
+      // Match field name case-insensitively (posEng)
       const matches = allWords.filter(entry =>
-        entry.posEng && entry.posEng.trim().toLowerCase() === normSearch
+        Object.keys(entry).find(h => h.toLowerCase() === 'poseng') &&
+        entry[Object.keys(entry).find(h => h.toLowerCase() === 'poseng')].trim().toLowerCase() === trimmedTerm
       );
+
       if (matches.length === 0) {
         resultDiv.innerHTML = "<div class='empty'>No result found.</div>";
         return;
       }
 
-      // Compose "Assamese_word (meaning)" for each match, remove quotes
+      // For each match: list Assamese word (Wrd) with corresponding meaning (Meanings)
       const wordMeaningPairs = matches.map(entry => {
-        const assamese = entry.Wrd ? entry.Wrd.trim() : "";
-        let meaning = entry.Meanings ? entry.Meanings.replace(/["']/g, "").trim() : "";
+        const assamese = entry[Object.keys(entry).find(h=>h.toLowerCase()==='wrd')] || "";
+        let meaning = entry[Object.keys(entry).find(h=>h.toLowerCase()==='meanings')] || "";
+        meaning = meaning.replace(/["']/g,"").trim();
         return meaning ? `${assamese} (${meaning})` : assamese;
-      });
+      }).filter(e=>e);
 
-      const posAsmVals = matches.map(entry => entry.posAsm ? entry.posAsm.trim() : "").filter(Boolean);
-      const uniquePosAsm = [...new Set(posAsmVals)];
-      const uniqueIdeaID = matches.map(entry => entry.IdeaID ? entry.IdeaID.trim() : "").filter(Boolean);
+      // Unique posAsm and IdeaIDs (case-insensitive)
+      const posAsmField = Object.keys(matches[0]).find(h=>h.toLowerCase()==='posasm');
+      const ideaIdField = Object.keys(matches[0]).find(h=>h.toLowerCase()==='ideaid');
+      const uniquePosAsm = matches.map(entry => entry[posAsmField] ? entry[posAsmField].trim() : "").filter(Boolean);
+      const uniqueIdeaID = matches.map(entry => entry[ideaIdField] ? entry[ideaIdField].trim() : "").filter(Boolean);
 
       resultDiv.innerHTML = `
         <div style="margin-bottom:1rem;">
           <div class="word">${sanitize(wordMeaningPairs.join(', '))}</div>
-          ${uniquePosAsm.length ? `<div class="partofspeech">${sanitize(uniquePosAsm.join(', '))}</div>` : ''}
-          ${uniqueIdeaID.length ? `<div style="color:#bbb; font-size:0.9em; margin-top:0.2rem;">IdeaID: ${sanitize(uniqueIdeaID.join(', '))}</div>` : ""}
+          ${uniquePosAsm.length ? `<div class="partofspeech">${sanitize([...new Set(uniquePosAsm)].join(', '))}</div>` : ''}
+          ${uniqueIdeaID.length ? `<div style="color:#bbb; font-size:0.9em; margin-top:0.2rem;">IdeaID: ${sanitize([...new Set(uniqueIdeaID)].join(', '))}</div>` : ""}
         </div>
       `;
     }
