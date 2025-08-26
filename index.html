@@ -32,9 +32,7 @@
       vertical-align: middle;
       letter-spacing: 0.02em;
     }
-    .title span:last-child {
-      color: #e12d39;
-    }
+    .title span:last-child { color: #e12d39; }
     .subtitle {
       color: #888;
       font-size: 1rem;
@@ -61,9 +59,7 @@
       background: #fafbfc;
       transition: border 0.15s;
     }
-    .search-box:focus {
-      border-color: #e12d39;
-    }
+    .search-box:focus { border-color: #e12d39; }
     .btn-row {
       display: flex;
       justify-content: flex-end;
@@ -84,17 +80,13 @@
       color: #fff;
     }
     .search-btn:active,
-    .search-btn:focus {
-      background: #b71a26;
-    }
+    .search-btn:focus { background: #b71a26; }
     .clear-btn {
       background: #f4f4f6;
       color: #888;
     }
     .clear-btn:active,
-    .clear-btn:focus {
-      background: #eee;
-    }
+    .clear-btn:focus { background: #eee; }
     .result {
       padding-top: 0.5rem;
     }
@@ -141,14 +133,6 @@
         margin: 1rem;
         padding: 1.2rem 0.4rem 0.3rem;
       }
-      .footer {
-        margin-bottom: 1.1rem;
-      }
-      .title { font-size: 1.35rem; }
-      .search-box { font-size: 1rem; padding: 0.73rem 0.7rem;}
-      button { font-size: 0.98rem; padding: 0.5rem 0.87rem;}
-      .word { font-size: 1.08rem; }
-      .section { font-size: 0.97rem;}
     }
   </style>
 </head>
@@ -159,7 +143,8 @@
     <div class="subtitle">Assamese Dictionary</div>
   </header>
   <div class="container">
-    <input class="search-box" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Search in Assamese, English, or Meaning…" id="searchInput">
+    <input class="search-box" type="text" autocomplete="off" autocapitalize="off" spellcheck="false"
+      placeholder="Search in Assamese, English, or Meaning…" id="searchInput">
     <div class="btn-row">
       <button class="clear-btn" id="clearBtn" title="Clear">✕</button>
       <button class="search-btn" id="searchBtn" title="Search">Search</button>
@@ -169,29 +154,39 @@
   <div class="footer">Made with ❤️ by Sauravhhh</div>
   <script>
     let allWords = [];
-    const resultDiv = document.getElementById('result');
     const searchInput = document.getElementById('searchInput');
+    const resultDiv = document.getElementById('result');
     const clearBtn = document.getElementById('clearBtn');
     const searchBtn = document.getElementById('searchBtn');
 
-    // Fetch both JSON files and keep results separate but combined for search
+    // Parse CSV text to Array of objects
+    function parseCSV(csv) {
+      const lines = csv.split(/\r?\n/).filter(l => l.trim());
+      const headers = lines[0].split(',').map(h => h.trim());
+      return lines.slice(1).map(line => {
+        const cells = line.split(',').map(c => c.trim());
+        let obj = {};
+        headers.forEach((h, i) => obj[h] = cells[i] || '');
+        return obj;
+      });
+    }
+
+    // Load both CSV files and join
     Promise.all([
-      fetch('dict1.json').then(r => r.json()),
-      fetch('dict2.json').then(r => r.json())
-    ]).then(([dict1, dict2]) => {
-      // Note: In this code, both dicts are kept in one array but are not merged—each has its own entries
-      allWords = (Array.isArray(dict1) && Array.isArray(dict2)) ? dict1.concat(dict2) : [];
-    }, () => {
-      allWords = [];
+      fetch('xobdo-words-AS.csv').then(r => r.text()),
+      fetch('xobdo-words-EN.csv').then(r => r.text())
+    ]).then(([asCSV, enCSV]) => {
+      const asData = parseCSV(asCSV);
+      const enData = parseCSV(enCSV);
+      allWords = asData.concat(enData);
     });
 
     function showResult(term) {
       resultDiv.innerHTML = "";
-      if(!term.trim()) return;
-
+      if (!term.trim()) return;
       term = term.toLowerCase();
 
-      // Get all matching entries: can come from either dict1.json or dict2.json
+      // Show all matching entries from both CSVs
       const matches = allWords.filter(entry =>
         Object.values(entry).some(
           v => v && v.toString().toLowerCase().includes(term)
@@ -199,12 +194,11 @@
         (entry.Wrd && extractBracketContent(entry.Wrd).toLowerCase().includes(term))
       );
 
-      if(matches.length === 0) {
+      if (matches.length === 0) {
         resultDiv.innerHTML = "<div class='empty'>No result found.</div>";
         return;
       }
 
-      // Show all results, one after another
       resultDiv.innerHTML = matches.map(found => `
         <div style="margin-bottom:1.4rem;">
           <div class="word">${sanitize(entryOrEmpty(found.Wrd))}</div>
@@ -219,32 +213,28 @@
     }
 
     function extractBracketContent(str) {
-      let m = /\(([^)]+)\)/.exec(str || '');
+      const m = /\(([^)]+)\)/.exec(str || '');
       return m ? m[1] : '';
     }
 
     function entryOrEmpty(val) { return val ? val : ""; }
     function sanitize(str) {
-      let d = document.createElement('div');
+      const d = document.createElement('div');
       d.textContent = str;
       return d.innerHTML;
     }
 
-    // Search on button click or Enter key
     searchBtn.addEventListener('click', () => {
       showResult(searchInput.value.trim());
     });
     searchInput.addEventListener('keyup', function(e) {
       if (e.key === 'Enter') showResult(this.value.trim());
     });
-
-    // Clear search box event
     clearBtn.addEventListener('click', function() {
       searchInput.value = "";
       resultDiv.innerHTML = "";
       searchInput.focus();
     });
-
     window.onload = function() {
       searchInput.focus();
     };
