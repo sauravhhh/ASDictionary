@@ -174,14 +174,15 @@
     const clearBtn = document.getElementById('clearBtn');
     const searchBtn = document.getElementById('searchBtn');
 
-    // Fetch both JSON files and combine data
+    // Fetch both JSON files and keep results separate but combined for search
     Promise.all([
       fetch('dict1.json').then(r => r.json()),
       fetch('dict2.json').then(r => r.json())
     ]).then(([dict1, dict2]) => {
-      allWords = Array.isArray(dict1) && Array.isArray(dict2) ? dict1.concat(dict2) : [];
+      // Note: In this code, both dicts are kept in one array but are not merged—each has its own entries
+      allWords = (Array.isArray(dict1) && Array.isArray(dict2)) ? dict1.concat(dict2) : [];
     }, () => {
-      allWords = []; // If fetch fails, keep empty (prevents JS error)
+      allWords = [];
     });
 
     function showResult(term) {
@@ -189,27 +190,32 @@
       if(!term.trim()) return;
 
       term = term.toLowerCase();
-      let found = allWords.find(entry =>
+
+      // Get all matching entries: can come from either dict1.json or dict2.json
+      const matches = allWords.filter(entry =>
         Object.values(entry).some(
           v => v && v.toString().toLowerCase().includes(term)
         ) ||
         (entry.Wrd && extractBracketContent(entry.Wrd).toLowerCase().includes(term))
       );
 
-      if(!found) {
+      if(matches.length === 0) {
         resultDiv.innerHTML = "<div class='empty'>No result found.</div>";
         return;
       }
 
-      resultDiv.innerHTML = `
-        <div class="word">${sanitize(entryOrEmpty(found.Wrd))}</div>
-        <div class="partofspeech">
-          ${sanitize(entryOrEmpty(found.posAsm))}${found.posEng ? ' / ' + sanitize(found.posEng) : ''}
+      // Show all results, one after another
+      resultDiv.innerHTML = matches.map(found => `
+        <div style="margin-bottom:1.4rem;">
+          <div class="word">${sanitize(entryOrEmpty(found.Wrd))}</div>
+          <div class="partofspeech">
+            ${sanitize(entryOrEmpty(found.posAsm))}${found.posEng ? ' / ' + sanitize(found.posEng) : ''}
+          </div>
+          <div class="section">Meanings</div>
+          <div class="meanings">${sanitize(entryOrEmpty(found.Meanings))}</div>
+          ${found.IdeaID ? `<div style="color:#bbb; font-size:0.9em; margin-top:0.8rem;">IdeaID: ${sanitize(entryOrEmpty(found.IdeaID))}</div>` : ""}
         </div>
-        <div class="section">Meanings</div>
-        <div class="meanings">${sanitize(entryOrEmpty(found.Meanings))}</div>
-        ${found.IdeaID ? `<div style="color:#bbb; font-size:0.9em; margin-top:0.8rem;">IdeaID: ${sanitize(entryOrEmpty(found.IdeaID))}</div>` : ""}
-      `;
+      `).join('');
     }
 
     function extractBracketContent(str) {
@@ -239,7 +245,6 @@
       searchInput.focus();
     });
 
-    // Minimal: Touch UX (optional, autofocus on load)
     window.onload = function() {
       searchInput.focus();
     };
