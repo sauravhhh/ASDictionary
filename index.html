@@ -159,7 +159,7 @@
     const clearBtn = document.getElementById('clearBtn');
     const searchBtn = document.getElementById('searchBtn');
 
-    // Parse CSV text to Array of objects
+    // CSV parser (handles commas, trims whitespace)
     function parseCSV(csv) {
       const lines = csv.split(/\r?\n/).filter(l => l.trim());
       const headers = lines[0].split(',').map(h => h.trim());
@@ -183,15 +183,15 @@
 
     function showResult(term) {
       resultDiv.innerHTML = "";
-      if (!term.trim()) return;
-      term = term.toLowerCase();
+      const trimmedTerm = term.trim();
+      if (!trimmedTerm) return;
 
-      // Show all matching entries from both CSVs
+      // Case insensitive exact (whole word) match for Wrd or any column
       const matches = allWords.filter(entry =>
         Object.values(entry).some(
-          v => v && v.toString().toLowerCase().includes(term)
+          v => v?.toString().toLowerCase() === trimmedTerm.toLowerCase()
         ) ||
-        (entry.Wrd && extractBracketContent(entry.Wrd).toLowerCase().includes(term))
+        (entry.Wrd && extractBracketContent(entry.Wrd).toLowerCase() === trimmedTerm.toLowerCase())
       );
 
       if (matches.length === 0) {
@@ -225,10 +225,10 @@
     }
 
     searchBtn.addEventListener('click', () => {
-      showResult(searchInput.value.trim());
+      showResult(searchInput.value);
     });
     searchInput.addEventListener('keyup', function(e) {
-      if (e.key === 'Enter') showResult(this.value.trim());
+      if (e.key === 'Enter') showResult(this.value);
     });
     clearBtn.addEventListener('click', function() {
       searchInput.value = "";
