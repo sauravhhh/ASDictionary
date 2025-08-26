@@ -144,7 +144,7 @@
   </header>
   <div class="container">
     <input class="search-box" type="text" autocomplete="off" autocapitalize="off" spellcheck="false"
-      placeholder="Search in Assamese, English, or Meaning…" id="searchInput">
+      placeholder="Search…" id="searchInput">
     <div class="btn-row">
       <button class="clear-btn" id="clearBtn" title="Clear">✕</button>
       <button class="search-btn" id="searchBtn" title="Search">Search</button>
@@ -159,7 +159,7 @@
     const clearBtn = document.getElementById('clearBtn');
     const searchBtn = document.getElementById('searchBtn');
 
-    // CSV parser (handles commas, trims whitespace)
+    // Parse CSV text to array of objects
     function parseCSV(csv) {
       const lines = csv.split(/\r?\n/).filter(l => l.trim());
       const headers = lines[0].split(',').map(h => h.trim());
@@ -183,15 +183,15 @@
 
     function showResult(term) {
       resultDiv.innerHTML = "";
-      const trimmedTerm = term.trim();
+      const trimmedTerm = term.trim().toLowerCase();
       if (!trimmedTerm) return;
 
-      // Case insensitive exact (whole word) match for Wrd or any column
+      // Only matches if a CSV field is exactly the search term (case-insensitive, trimmed)
       const matches = allWords.filter(entry =>
         Object.values(entry).some(
-          v => v?.toString().toLowerCase() === trimmedTerm.toLowerCase()
+          v => v && v.toString().trim().toLowerCase() === trimmedTerm
         ) ||
-        (entry.Wrd && extractBracketContent(entry.Wrd).toLowerCase() === trimmedTerm.toLowerCase())
+        (entry.Wrd && extractBracketContent(entry.Wrd).trim().toLowerCase() === trimmedTerm)
       );
 
       if (matches.length === 0) {
