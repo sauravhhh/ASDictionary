@@ -159,7 +159,6 @@
     const clearBtn = document.getElementById('clearBtn');
     const searchBtn = document.getElementById('searchBtn');
 
-    // Parse CSV text to array of objects
     function parseCSV(csv) {
       const lines = csv.split(/\r?\n/).filter(l => l.trim());
       const headers = lines[0].split(',').map(h => h.trim());
@@ -171,7 +170,6 @@
       });
     }
 
-    // Load both CSV files and join
     Promise.all([
       fetch('xobdo-words-AS.csv').then(r => r.text()),
       fetch('xobdo-words-EN.csv').then(r => r.text())
@@ -186,12 +184,15 @@
       const trimmedTerm = term.trim().toLowerCase();
       if (!trimmedTerm) return;
 
-      // Only matches if a CSV field is exactly the search term (case-insensitive, trimmed)
+      // Get all matches where any field (e.g. English word column, or Assamese word) exactly matches.
+      // User searches for English word; show all distinct Assamese words (with different IdeaID) on one line.
+      // This logic assumes English word is "posEng" or similar column (change as needed for your CSV).
+
+      // Find all matching entries
       const matches = allWords.filter(entry =>
         Object.values(entry).some(
           v => v && v.toString().trim().toLowerCase() === trimmedTerm
-        ) ||
-        (entry.Wrd && extractBracketContent(entry.Wrd).trim().toLowerCase() === trimmedTerm)
+        )
       );
 
       if (matches.length === 0) {
@@ -199,25 +200,38 @@
         return;
       }
 
-      resultDiv.innerHTML = matches.map(found => `
+      // If searching by English, find all unique Assamese for each IdeaID
+      // You can adjust the column name below (assuming 'posEng' is English part; replace as needed)
+      let assameseList = [];
+      let meaningList = [];
+      let posAsmList = [];
+      let ideaIdList = [];
+      matches.forEach(entry => {
+        if (entry.Wrd) assameseList.push(entry.Wrd.trim());
+        if (entry.Meanings) meaningList.push(entry.Meanings.trim());
+        if (entry.posAsm) posAsmList.push(entry.posAsm.trim());
+        if (entry.IdeaID) ideaIdList.push(entry.IdeaID.trim());
+      });
+
+      // Remove duplicates from Assamese list and show as comma-separated
+      const uniqueAssamese = [...new Set(assameseList)];
+      const uniqueMeanings = [...new Set(meaningList)];
+      const uniquePosAsm = [...new Set(posAsmList)];
+      const uniqueIdeaID = [...new Set(ideaIdList)];
+
+      resultDiv.innerHTML = `
         <div style="margin-bottom:1.4rem;">
-          <div class="word">${sanitize(entryOrEmpty(found.Wrd))}</div>
+          <div class="word">${sanitize(uniqueAssamese.join(', '))}</div>
           <div class="partofspeech">
-            ${sanitize(entryOrEmpty(found.posAsm))}${found.posEng ? ' / ' + sanitize(found.posEng) : ''}
+            ${sanitize(uniquePosAsm.join(', '))}
           </div>
           <div class="section">Meanings</div>
-          <div class="meanings">${sanitize(entryOrEmpty(found.Meanings))}</div>
-          ${found.IdeaID ? `<div style="color:#bbb; font-size:0.9em; margin-top:0.8rem;">IdeaID: ${sanitize(entryOrEmpty(found.IdeaID))}</div>` : ""}
+          <div class="meanings">${sanitize(uniqueMeanings.join('; '))}</div>
+          ${uniqueIdeaID.length ? `<div style="color:#bbb; font-size:0.9em; margin-top:0.8rem;">IdeaID: ${sanitize(uniqueIdeaID.join(', '))}</div>` : ""}
         </div>
-      `).join('');
+      `;
     }
 
-    function extractBracketContent(str) {
-      const m = /\(([^)]+)\)/.exec(str || '');
-      return m ? m[1] : '';
-    }
-
-    function entryOrEmpty(val) { return val ? val : ""; }
     function sanitize(str) {
       const d = document.createElement('div');
       d.textContent = str;
