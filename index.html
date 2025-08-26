@@ -5,8 +5,7 @@
   <title>অর্থ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    html { box-sizing: border-box; }
-    *, *:before, *:after { box-sizing: inherit; }
+    html { box-sizing: border-box; } *, *:before, *:after { box-sizing: inherit; }
     body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; color: #222; margin: 0;}
     header { padding: 2.2rem 0.8rem 1rem; text-align: left;}
     .dot { display: inline-block; width: 12px; height: 12px; background: #e12d39; border-radius: 50%; margin-right: 12px; vertical-align: middle; }
@@ -23,12 +22,11 @@
     .clear-btn { background: #f4f4f6; color: #888;}
     .clear-btn:active, .clear-btn:focus { background: #eee;}
     .result { padding-top: 0.5rem;}
-    .word { font-size: 1.45rem; font-weight: bold; margin-bottom: 0.15rem; word-break: break-word;}
-    .meanings { margin-bottom: 0.7rem; word-break: break-word; font-size: 1rem;}
-    .partofspeech { font-size: 1.02rem; color: #8d99ae; margin-bottom: 0.6rem; margin-top: 0rem; word-break: break-word;}
+    .word { font-size: 1.18rem; font-weight: bold; margin-bottom: 0.08rem; word-break: break-word;}
+    .partofspeech { font-size: 1.02rem; color: #8d99ae; margin-bottom: 0.33rem; margin-top: 0rem; word-break: break-word;}
     .section { margin: 1rem 0 0.4rem; font-weight: 600; font-size: 1.07rem; color: #323648;}
     .empty { color: #bbb; font-size: 1.08rem; text-align: left; margin-top: 1.3rem;}
-    .footer { text-align: center; margin: 2.5rem 0 1rem; font-size: 1rem; color: #222; letter-spacing: 0.02em; font-weight: 500;}
+    .footer { text-align: center; margin: 2.5rem 0 1rem; font-size: 1rem; color: #222; letter-spacing: 0.02em; font-weight: 500; }
     @media (max-width: 520px) { .container { margin: 1rem; padding: 1.2rem 0.4rem 0.3rem; } }
   </style>
 </head>
@@ -59,7 +57,17 @@
       const lines = csv.split(/\r?\n/).filter(l => l.trim());
       const headers = lines[0].split(',').map(h => h.trim());
       return lines.slice(1).map(line => {
-        const cells = line.split(',').map(c => c.trim());
+        // Handle commas inside quotes
+        let cells = [];
+        let re = /(".*?"|[^",\s]+)(?=\s*,|\s*$)/g;
+        let match;
+        let i = 0;
+        while ((match = re.exec(line)) !== null) {
+          let c = match[0].replace(/^"|"$/g, "");
+          cells.push(c.trim());
+          i++;
+        }
+        while (cells.length < headers.length) cells.push("");
         let obj = {};
         headers.forEach((h, i) => obj[h] = cells[i] || '');
         return obj;
@@ -80,39 +88,33 @@
       const trimmedTerm = term.trim().toLowerCase();
       if (!trimmedTerm) return;
 
-      // Find all matches for an English word
+      // Find all matches for an English word (posEng exact match)
       const matches = allWords.filter(entry =>
         entry.posEng && entry.posEng.trim().toLowerCase() === trimmedTerm
       );
-
       if (matches.length === 0) {
         resultDiv.innerHTML = "<div class='empty'>No result found.</div>";
         return;
       }
+      // Build paired Assamese word (meaning) list, removing quotes
+      const wordMeaningPairs = matches.map(entry => {
+        const assamese = entry.Wrd ? entry.Wrd.trim() : "";
+        let meaning = entry.Meanings ? entry.Meanings.replace(/["']/g, "").trim() : "";
+        return meaning ? `${assamese} (${meaning})` : assamese;
+      });
 
-      // Assamese and Meaning for each match, removing quotes
-      const assameseList = matches.map(entry => entry.Wrd.trim());
-      const meaningList = matches.map(entry =>
-        entry.Meanings ? entry.Meanings.replace(/["']/g, "").trim() : ""
-      );
+      // Unique posAsm and IdeaIDs
       const uniquePosAsm = [...new Set(matches.map(entry => entry.posAsm ? entry.posAsm.trim() : ""))].filter(Boolean);
       const uniqueIdeaID = matches.map(entry => entry.IdeaID ? entry.IdeaID.trim() : "").filter(Boolean);
 
-      // Zip together the Assamese word and its meaning, comma separated
-      const wordMeanPairs = assameseList.map((wrd, i) => {
-        let meaning = meaningList[i] || '';
-        return meaning ? `${wrd} (${meaning})` : wrd;
-      });
-
       resultDiv.innerHTML = `
-        <div style="margin-bottom:1.4rem;">
-          <div class="word">${sanitize(wordMeanPairs.join(', '))}</div>
-          <div class="partofspeech">${sanitize(uniquePosAsm.join(', '))}</div>
-          ${uniqueIdeaID.length ? `<div style="color:#bbb; font-size:0.9em; margin-top:0.8rem;">IdeaID: ${sanitize(uniqueIdeaID.join(', '))}</div>` : ""}
+        <div style="margin-bottom:1rem;">
+          <div class="word">${sanitize(wordMeaningPairs.join(', '))}</div>
+          ${uniquePosAsm.length ? `<div class="partofspeech">${sanitize(uniquePosAsm.join(', '))}</div>` : ''}
+          ${uniqueIdeaID.length ? `<div style="color:#bbb; font-size:0.9em; margin-top:0.2rem;">IdeaID: ${sanitize(uniqueIdeaID.join(', '))}</div>` : ""}
         </div>
       `;
     }
-
     function sanitize(str) {
       const d = document.createElement('div');
       d.textContent = str;
