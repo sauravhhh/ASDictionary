@@ -11,13 +11,16 @@
     .title { font-size: 2.2rem; font-weight: 600; display: inline-block; vertical-align: middle; }
     .subtitle { color: #888; font-size: 1.1rem; letter-spacing: 1px; margin-left: 0.5rem; }
     .container { max-width: 420px; margin: 2rem auto; background: #fff; border-radius: 10px; padding: 2rem 1.5rem; box-shadow: 0 2px 12px #eaeaea; }
-    .search-box { width: 100%; font-size: 1.1rem; padding: 1rem; border: 1px solid #dedede; border-radius: 6px; margin-bottom: 1.5rem; outline: none; }
+    .search-row { display: flex; gap: 0.5rem; }
+    .search-box { flex: 1; font-size: 1.1rem; padding: 1rem; border: 1px solid #dedede; border-radius: 6px; margin-bottom: 1.5rem; outline: none; }
+    .clear-btn { padding: 0 1.3rem; border: none; background: #f5f5f7; color: #e12d39; border-radius: 6px; cursor: pointer; font-size: 1.1rem; }
     .result { padding-top: 1rem; }
     .word { font-size: 2rem; font-weight: 600; }
-    .section { margin: 1.2rem 0 0.6rem; font-weight: 600; }
     .partofspeech { font-size: 1rem; color: #8d99ae; }
+    .section { margin: 1.2rem 0 0.6rem; font-weight: 600; }
     .meanings { margin-bottom: 1.2rem; }
     .empty { color: #aaa; font-size: 1.1rem; margin-top:2rem; }
+    .footer { text-align: center; margin: 3rem 0 1.2rem; color: #c42b47; font-size: 1rem; letter-spacing: 0.02em; }
   </style>
 </head>
 <body>
@@ -27,50 +30,36 @@
     <div class="subtitle">Assamese Dictionary</div>
   </header>
   <div class="container">
-    <input class="search-box" type="text" placeholder="Search in Assamese, English, or Meaning…" id="searchInput">
+    <div class="search-row">
+      <input class="search-box" type="text" placeholder="Search in Assamese, English, or Meaning…" id="searchInput">
+      <button class="clear-btn" id="clearBtn" title="Clear search">✕</button>
+    </div>
     <div class="result" id="result"></div>
   </div>
+  <div class="footer">Made with ❤️ by Sauravhhh</div>
   <script>
-    // Utility: Parse CSV (handles commas, trims whitespace)
-    function parseCSV(csv) {
-      let lines = csv.replaceAll('\r','').split('\n').filter(Boolean);
-      let headers = lines[0].split(',').map(h => h.trim());
-      let data = [];
-      for(let i=1; i<lines.length; i++) {
-        let row = lines[i].split(',').map(x => x.trim());
-        let entry = {};
-        for(let j=0; j<headers.length; j++) {
-          entry[headers[j]] = row[j] || '';
-        }
-        data.push(entry);
-      }
-      return data;
-    }
-
     let allWords = [];
-    Promise.all([
-      fetch('xobdo-words-EN.csv').then(r => r.text()),
-      fetch('xobdo-words-AS.csv').then(r => r.text())
-    ]).then(([enCSV, asCSV]) => {
-      let enArr = parseCSV(enCSV);
-      let asArr = parseCSV(asCSV);
-      allWords = enArr.concat(asArr);
-    });
-
     let resultDiv = document.getElementById('result');
     let searchInput = document.getElementById('searchInput');
+    let clearBtn = document.getElementById('clearBtn');
+
+    // fetch both JSON files and combine data
+    Promise.all([
+      fetch('dict1.json').then(r => r.json()),
+      fetch('dict2.json').then(r => r.json())
+    ]).then(([dict1, dict2]) => {
+      allWords = dict1.concat(dict2); // combine
+    });
 
     function showResult(term) {
       resultDiv.innerHTML = "";
       if (!term.trim()) return;
 
-      // Case-insensitive search in all columns and also in meaning inside brackets
       term = term.toLowerCase();
 
-      // Try to match user input to both word and meaning inside bracket (e.g. 'rice' finds 'ভাত (rice)')
       let item = allWords.find(entry =>
         Object.values(entry).some(
-          v => v && v.toLowerCase().includes(term)
+          v => v && v.toString().toLowerCase().includes(term)
         ) ||
         (entry.Wrd && extractBracketContent(entry.Wrd).toLowerCase().includes(term))
       );
@@ -91,7 +80,6 @@
       `;
     }
 
-    // Extracts meaning inside brackets if present
     function extractBracketContent(str) {
       let m = /\(([^)]+)\)/.exec(str||'');
       return m ? m[1] : '';
@@ -106,6 +94,12 @@
 
     searchInput.addEventListener('input', function() {
       showResult(this.value.trim());
+    });
+
+    clearBtn.addEventListener('click', function() {
+      searchInput.value = '';
+      resultDiv.innerHTML = '';
+      searchInput.focus();
     });
   </script>
 </body>
