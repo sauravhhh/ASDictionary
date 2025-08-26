@@ -16,17 +16,16 @@
     .search-box { width: 100%; font-size: 1.05rem; padding: 0.85rem 1rem; border: 1px solid #dedede; border-radius: 7px; margin-bottom: 0.8rem; outline: none; background: #fafbfc; transition: border 0.15s;}
     .search-box:focus { border-color: #e12d39;}
     .btn-row { display: flex; justify-content: flex-end; gap: 0.7rem; margin-bottom: 1.2rem;}
-    button { font-size: 1rem; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; outline: none; transition: background 0.1s;}
+    button { font-size: 1rem; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; outline: none;}
     .search-btn { background: #e12d39; color: #fff;}
     .search-btn:active, .search-btn:focus { background: #b71a26; }
     .clear-btn { background: #f4f4f6; color: #888;}
     .clear-btn:active, .clear-btn:focus { background: #eee;}
     .result { padding-top: 0.5rem;}
     .word { font-size: 1.18rem; font-weight: bold; margin-bottom: 0.08rem; word-break: break-word;}
-    .partofspeech { font-size: 1.02rem; color: #8d99ae; margin-bottom: 0.33rem; margin-top: 0rem; word-break: break-word;}
-    .section { margin: 1rem 0 0.4rem; font-weight: 600; font-size: 1.07rem; color: #323648;}
+    .partofspeech { font-size: 1.02rem; color: #8d99ae; margin-bottom: 0.33rem; word-break: break-word;}
     .empty { color: #bbb; font-size: 1.08rem; text-align: left; margin-top: 1.3rem;}
-    .footer { text-align: center; margin: 2.5rem 0 1rem; font-size: 1rem; color: #222; letter-spacing: 0.02em; font-weight: 500; }
+    .footer { text-align: center; margin: 2.5rem 0 1rem; font-size: 1rem; color: #222; font-weight: 500; }
     @media (max-width: 520px) { .container { margin: 1rem; padding: 1.2rem 0.4rem 0.3rem; } }
   </style>
 </head>
@@ -53,25 +52,24 @@
     const clearBtn = document.getElementById('clearBtn');
     const searchBtn = document.getElementById('searchBtn');
 
+    // Robust CSV parser to handle quotes, commas, and whitespace
     function parseCSV(csv) {
       const lines = csv.split(/\r?\n/).filter(l => l.trim());
-      const headers = lines[0].split(',').map(h => h.trim());
+      if (lines.length < 2) return [];
+      const headers = lines[0].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g).map(h => h.replace(/^"|"$/g,"").trim());
       return lines.slice(1).map(line => {
-        // Handle commas inside quotes
-        let cells = [];
+        if (!line.trim()) return null;
         let re = /(".*?"|[^",\s]+)(?=\s*,|\s*$)/g;
+        let cells = [];
         let match;
-        let i = 0;
         while ((match = re.exec(line)) !== null) {
-          let c = match[0].replace(/^"|"$/g, "");
-          cells.push(c.trim());
-          i++;
+          cells.push(match[0].replace(/^"|"$/g,"").trim());
         }
         while (cells.length < headers.length) cells.push("");
         let obj = {};
         headers.forEach((h, i) => obj[h] = cells[i] || '');
         return obj;
-      });
+      }).filter(x => x && Object.keys(x).length > 0);
     }
 
     Promise.all([
@@ -85,26 +83,30 @@
 
     function showResult(term) {
       resultDiv.innerHTML = "";
-      const trimmedTerm = term.trim().toLowerCase();
+      const trimmedTerm = term.trim();
       if (!trimmedTerm) return;
 
-      // Find all matches for an English word (posEng exact match)
+      // Normalize for matching
+      const normSearch = trimmedTerm.toLowerCase();
+
+      // Find all entries where posEng EXACTLY matches search term
       const matches = allWords.filter(entry =>
-        entry.posEng && entry.posEng.trim().toLowerCase() === trimmedTerm
+        entry.posEng && entry.posEng.trim().toLowerCase() === normSearch
       );
       if (matches.length === 0) {
         resultDiv.innerHTML = "<div class='empty'>No result found.</div>";
         return;
       }
-      // Build paired Assamese word (meaning) list, removing quotes
+
+      // Compose "Assamese_word (meaning)" for each match, remove quotes
       const wordMeaningPairs = matches.map(entry => {
         const assamese = entry.Wrd ? entry.Wrd.trim() : "";
         let meaning = entry.Meanings ? entry.Meanings.replace(/["']/g, "").trim() : "";
         return meaning ? `${assamese} (${meaning})` : assamese;
       });
 
-      // Unique posAsm and IdeaIDs
-      const uniquePosAsm = [...new Set(matches.map(entry => entry.posAsm ? entry.posAsm.trim() : ""))].filter(Boolean);
+      const posAsmVals = matches.map(entry => entry.posAsm ? entry.posAsm.trim() : "").filter(Boolean);
+      const uniquePosAsm = [...new Set(posAsmVals)];
       const uniqueIdeaID = matches.map(entry => entry.IdeaID ? entry.IdeaID.trim() : "").filter(Boolean);
 
       resultDiv.innerHTML = `
