@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Assamese Dictionary</title>
+  <title>অর্থ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     html { box-sizing: border-box; }
@@ -24,9 +24,9 @@
     .clear-btn:active, .clear-btn:focus { background: #eee;}
     .result { padding-top: 0.5rem;}
     .word { font-size: 1.45rem; font-weight: bold; margin-bottom: 0.15rem; word-break: break-word;}
+    .meanings { margin-bottom: 0.7rem; word-break: break-word; font-size: 1rem;}
     .partofspeech { font-size: 1.02rem; color: #8d99ae; margin-bottom: 0.6rem; margin-top: 0rem; word-break: break-word;}
     .section { margin: 1rem 0 0.4rem; font-weight: 600; font-size: 1.07rem; color: #323648;}
-    .meanings { margin-bottom: 0.7rem; word-break: break-word; font-size: 1rem;}
     .empty { color: #bbb; font-size: 1.08rem; text-align: left; margin-top: 1.3rem;}
     .footer { text-align: center; margin: 2.5rem 0 1rem; font-size: 1rem; color: #222; letter-spacing: 0.02em; font-weight: 500;}
     @media (max-width: 520px) { .container { margin: 1rem; padding: 1.2rem 0.4rem 0.3rem; } }
@@ -35,7 +35,7 @@
 <body>
   <header>
     <span class="dot"></span>
-    <span class="title">অৰ্থ<span>.</span></span>
+    <span class="title">অর্থ<span>.</span></span>
     <div class="subtitle">Assamese Dictionary</div>
   </header>
   <div class="container">
@@ -80,7 +80,7 @@
       const trimmedTerm = term.trim().toLowerCase();
       if (!trimmedTerm) return;
 
-      // Find entries where 'posEng' exactly matches search term (case-insensitive)
+      // Find all matches for an English word
       const matches = allWords.filter(entry =>
         entry.posEng && entry.posEng.trim().toLowerCase() === trimmedTerm
       );
@@ -90,20 +90,24 @@
         return;
       }
 
-      // Gather unique Assamese words and meanings (removing any quote characters from meanings)
+      // Assamese and Meaning for each match, removing quotes
       const assameseList = matches.map(entry => entry.Wrd.trim());
       const meaningList = matches.map(entry =>
         entry.Meanings ? entry.Meanings.replace(/["']/g, "").trim() : ""
       );
-      const uniqueIdeaID = [...new Set(matches.map(entry => entry.IdeaID ? entry.IdeaID.trim() : ""))].filter(Boolean);
       const uniquePosAsm = [...new Set(matches.map(entry => entry.posAsm ? entry.posAsm.trim() : ""))].filter(Boolean);
+      const uniqueIdeaID = matches.map(entry => entry.IdeaID ? entry.IdeaID.trim() : "").filter(Boolean);
+
+      // Zip together the Assamese word and its meaning, comma separated
+      const wordMeanPairs = assameseList.map((wrd, i) => {
+        let meaning = meaningList[i] || '';
+        return meaning ? `${wrd} (${meaning})` : wrd;
+      });
 
       resultDiv.innerHTML = `
         <div style="margin-bottom:1.4rem;">
-          <div class="word">${sanitize(assameseList.join(', '))}</div>
+          <div class="word">${sanitize(wordMeanPairs.join(', '))}</div>
           <div class="partofspeech">${sanitize(uniquePosAsm.join(', '))}</div>
-          <div class="section">Meanings</div>
-          <div class="meanings">${sanitize(meaningList.join(', '))}</div>
           ${uniqueIdeaID.length ? `<div style="color:#bbb; font-size:0.9em; margin-top:0.8rem;">IdeaID: ${sanitize(uniqueIdeaID.join(', '))}</div>` : ""}
         </div>
       `;
