@@ -93,55 +93,63 @@
 
     function showResult(term) {
       resultDiv.innerHTML = "";
-      if (!csvLoaded) { resultDiv.innerHTML = "<div class='empty'>Dictionary loading, please wait…</div>"; return; }
-      const trimmedTerm = term.replace(/["']/g,'').trim().toLowerCase();
-      if (!trimmedTerm) return;
-      if (!allWords.length) {
-        resultDiv.innerHTML = "<div class='empty'>No data found in CSV.</div>"; return;
+      if (!csvLoaded) {
+        resultDiv.innerHTML = "<div class='empty'>Dictionary loading, please wait…</div>";
+        return;
       }
+      const trimmedTerm = term.replace(/["']/g, '').trim().toLowerCase();
+      if (!trimmedTerm) return;
+
+      if (!allWords.length) {
+        resultDiv.innerHTML = "<div class='empty'>No data found in CSV.</div>";
+        return;
+      }
+
       const entry = allWords[0];
       const wrdField = matchField(entry, 'Wrd');
       const meaningsField = matchField(entry, 'Meanings');
-      const posAsmField = matchField(entry, 'posAsm');
-      const ideaIdField = matchField(entry, 'IdeaID');
-      if (!wrdField) {
-        resultDiv.innerHTML = "<div class='empty'>Check your CSV headers: 'Wrd' column required.</div>";
+
+      if (!wrdField || !meaningsField) {
+        resultDiv.innerHTML = "<div class='empty'>Check your CSV headers: 'Wrd' and 'Meanings' columns required.</div>";
         return;
       }
-      // Match only on "Wrd"
+
+      // Match either exact word OR present in meanings
       const matches = allWords.filter(entry => {
-        let w = entry[wrdField] || '';
-        w = w.replace(/["']/g,'').trim().toLowerCase();
-        return w === trimmedTerm;
+        let wrd = (entry[wrdField] || '').replace(/["']/g, '').trim().toLowerCase();
+        let mean = (entry[meaningsField] || '').replace(/["']/g, '').trim().toLowerCase();
+        return wrd === trimmedTerm || mean.split(/[,;]+/).map(m=>m.trim()).includes(trimmedTerm);
       });
 
       if (!matches.length) {
-        resultDiv.innerHTML =
-          `<div class='empty'>No result found for "<b>${sanitize(term)}</b>".<br>
-           <span style="font-size:0.92em;">Search is done only on 'Wrd' (Assamese or English)<br>
-           <b>First CSV Row:</b> <pre style="background:#eee;color:#666;">${JSON.stringify(entry,null,2)}</pre></span>`;
+        resultDiv.innerHTML = `<div class='empty'>No result found for "<b>${sanitize(term)}</b>".</div>`;
         return;
       }
-      // Pair word and meaning only for display, e.g. "dance (meaning)" or "xyz (xyzMean)"
-      const wordMeaningPairs = matches.map(entry => {
-        const mean = meaningsField && entry[meaningsField] ? entry[meaningsField].replace(/["']/g,"").trim() : "";
-        return mean ? `${entry[wrdField]} (${mean})` : entry[wrdField];
+
+      // Show meaning pairs (English = Assamese OR Assamese = English)
+      let results = matches.map(entry => {
+        let wrd = entry[wrdField] || "";
+        let mean = entry[meaningsField] || "";
+        if (wrd.toLowerCase() === trimmedTerm) {
+          return `${wrd} = ${mean}`;
+        } else {
+          return `${trimmedTerm} = ${mean}`;
+        }
       });
-      const uniquePosAsm = posAsmField ? [...new Set(matches.map(entry => entry[posAsmField] ? entry[posAsmField].replace(/["']/g,'').trim() : "").filter(Boolean))] : [];
-      const uniqueIdeaID = ideaIdField ? [...new Set(matches.map(entry => entry[ideaIdField] ? entry[ideaIdField].replace(/["']/g,'').trim() : "").filter(Boolean))] : [];
+
       resultDiv.innerHTML = `
         <div style="margin-bottom:1rem;">
-          <div class="word">${sanitize(wordMeaningPairs.join(', '))}</div>
-          ${uniquePosAsm.length ? `<div class="partofspeech">${sanitize(uniquePosAsm.join(', '))}</div>` : ''}
-          ${uniqueIdeaID.length ? `<div style="color:#bbb; font-size:0.9em; margin-top:0.2rem;">IdeaID: ${sanitize(uniqueIdeaID.join(', '))}</div>` : ""}
+          <div class="word">${sanitize(results.join("<br>"))}</div>
         </div>
       `;
     }
+
     function sanitize(str) {
       const d = document.createElement('div');
       d.textContent = str;
       return d.innerHTML;
     }
+
     searchBtn.addEventListener('click', () => { showResult(searchInput.value); });
     searchInput.addEventListener('keyup', function(e) { if (e.key === 'Enter') showResult(this.value); });
     clearBtn.addEventListener('click', function() { searchInput.value = ""; resultDiv.innerHTML = ""; searchInput.focus(); });
