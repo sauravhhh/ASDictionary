@@ -22,9 +22,6 @@
     .clear-btn { background: #f4f4f6; color: #888;}
     .clear-btn:active, .clear-btn:focus { background: #eee;}
     .result { padding-top: 0.5rem;}
-    .word { font-size: 1.18rem; font-weight: bold; margin-bottom: 0.08rem; word-break: break-word;}
-    .partofspeech { font-size: 1.02rem; color: #8d99ae; margin-bottom: 0.33rem; word-break: break-word;}
-    .empty { color: #bbb; font-size: 1.08rem; text-align: left; margin-top: 1.3rem;}
     .footer { text-align: center; margin: 2.5rem 0 1rem; font-size: 1rem; color: #222; font-weight: 500; }
     @media (max-width: 520px) { .container { margin: 1rem; padding: 1.2rem 0.4rem 0.3rem; } }
   </style>
@@ -107,18 +104,20 @@
 
       const entry = allWords[0];
       const wrdField = matchField(entry, 'Wrd');
+      const posAsmField = matchField(entry, 'posAsm');
+      const defField = matchField(entry, 'Definition');
       const meaningsField = matchField(entry, 'Meanings');
 
-      if (!wrdField || !meaningsField) {
-        resultDiv.innerHTML = "<div class='empty'>Check your CSV headers: 'Wrd' and 'Meanings' columns required.</div>";
+      if (!wrdField || !defField) {
+        resultDiv.innerHTML = "<div class='empty'>Check your CSV headers: 'Wrd', 'Definition' required.</div>";
         return;
       }
 
-      // Match either exact word OR present in meanings
+      // Match exact on 'Wrd' or on meanings
       const matches = allWords.filter(entry => {
         let wrd = (entry[wrdField] || '').replace(/["']/g, '').trim().toLowerCase();
         let mean = (entry[meaningsField] || '').replace(/["']/g, '').trim().toLowerCase();
-        return wrd === trimmedTerm || mean.split(/[,;]+/).map(m=>m.trim()).includes(trimmedTerm);
+        return wrd === trimmedTerm || mean.split(/[,;]+/).map(m => m.trim()).includes(trimmedTerm);
       });
 
       if (!matches.length) {
@@ -126,20 +125,24 @@
         return;
       }
 
-      // Show meaning pairs (English = Assamese OR Assamese = English)
-      let results = matches.map(entry => {
-        let wrd = entry[wrdField] || "";
-        let mean = entry[meaningsField] || "";
-        if (wrd.toLowerCase() === trimmedTerm) {
-          return `${wrd} = ${mean}`;
-        } else {
-          return `${trimmedTerm} = ${mean}`;
-        }
-      });
+      // Only use the first relevant match
+      const wordObj = matches[0];
+      const assameseWord = wordObj[wrdField] || '';
+      const posAsm = wordObj[posAsmField] || '';
+      const definition = wordObj[defField] || '';
 
+      // Render output
       resultDiv.innerHTML = `
-        <div style="margin-bottom:1rem;">
-          <div class="word">${sanitize(results.join("<br>"))}</div>
+        <div style="background:#fafbfc; border-radius:12px; border:1.4px solid #f1f1f1; padding:2em 1.2em 2em; box-shadow:0 2px 8px #f5f5f5; max-width:420px; margin:auto;">
+          <div style="display:flex;align-items:center;gap:0.6em;margin-bottom:0.1em;">
+            <div style="font-size:2.3rem;font-weight:800;letter-spacing:0.04em;">${sanitize(assameseWord)}</div>
+            <div style="font-size:1.5rem; color:#ccc; cursor:pointer;user-select:none;" title="Add to favourites">&#9825;</div>
+          </div>
+          ${posAsm ? `<div style="font-style:italic; font-size:1.06em; color:#8d99ae; margin:0.18em 0 1.08em;">${sanitize(posAsm)}</div>` : "<div style='margin-bottom:1.1em;'></div>"}
+          <div style="margin-bottom:0.25em;">
+            <b style="font-size:1.11em; color:#222;">Definition</b><br>
+            <span style="font-size:1.10em">${sanitize(definition)}</span>
+          </div>
         </div>
       `;
     }
