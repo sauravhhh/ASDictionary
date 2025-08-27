@@ -26,6 +26,7 @@
     .partofspeech { font-size: 1.02rem; color: #8d99ae; margin-bottom: 0.33rem; word-break: break-word;}
     .empty { color: #bbb; font-size: 1.08rem; text-align: left; margin-top: 1.3rem;}
     .footer { text-align: center; margin: 2.5rem 0 1rem; font-size: 1rem; color: #222; font-weight: 500; }
+    pre { font-size: 0.85rem; background: #f9f9fb; color: #b71a26; padding: 10px; border-radius: 6px; }
     @media (max-width: 520px) { .container { margin: 1rem; padding: 1.2rem 0.4rem 0.3rem; } }
   </style>
 </head>
@@ -42,23 +43,23 @@
       <button class="clear-btn" id="clearBtn" title="Clear">✕</button>
       <button class="search-btn" id="searchBtn" title="Search">Search</button>
     </div>
-    <div class="result" id="result"></div>
+    <div class="result" id="result">Loading dictionary...</div>
   </div>
   <div class="footer">Made with ❤️ by Sauravhhh</div>
   <script>
     let allWords = [];
+    let csvLoaded = false;
     const searchInput = document.getElementById('searchInput');
     const resultDiv = document.getElementById('result');
     const clearBtn = document.getElementById('clearBtn');
     const searchBtn = document.getElementById('searchBtn');
 
-    // CSV parser with robust quote/commas/fields handling
+    // Robust and universal CSV parser
     function parseCSV(csvText) {
       const lines = csvText.split(/\r?\n/).filter(l => l.trim());
       if (lines.length < 2) return [];
       const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g,"").trim());
       return lines.slice(1).map(line => {
-        // Parse line using simple and quoted CSV logic
         let cells = [];
         let cell = '';
         let inQuotes = false;
@@ -72,12 +73,12 @@
         cells.push(cell.trim());
         while (cells.length < headers.length) cells.push("");
         let obj = {};
-        headers.forEach((h, idx) => obj[h] = cells[idx] ? cells[idx].replace(/^"|"$/g,"").trim() : '');
+        headers.forEach((h, idx) => obj[h.trim()] = cells[idx] ? cells[idx].replace(/^"|"$/g,"").trim() : '');
         return obj;
       });
     }
 
-    // Fetch and parse both CSVs
+    // Load CSV files
     Promise.all([
       fetch('xobdo-words-AS.csv').then(r => r.text()).catch(() => ''),
       fetch('xobdo-words-EN.csv').then(r => r.text()).catch(() => '')
@@ -85,66 +86,83 @@
       const asData = parseCSV(asCSV);
       const enData = parseCSV(enCSV);
       allWords = asData.concat(enData);
+      csvLoaded = true;
+      resultDiv.innerHTML = "";
     });
+
+    function matchField(entry, name) {
+      // Find field by header, ignoring case/spaces (works on inconsistent CSVs)
+      return Object.keys(entry).find(k => k.replace(/\s/g,'').toLowerCase() === name.replace(/\s/g,'').toLowerCase());
+    }
 
     function showResult(term) {
       resultDiv.innerHTML = "";
+      if (!csvLoaded) { resultDiv.innerHTML = "<div class='empty'>Dictionary loading, please wait…</div>"; return; }
       const trimmedTerm = term.trim().toLowerCase();
       if (!trimmedTerm) return;
 
-      // Match field name case-insensitively (posEng)
-      const matches = allWords.filter(entry =>
-        Object.keys(entry).find(h => h.toLowerCase() === 'poseng') &&
-        entry[Object.keys(entry).find(h => h.toLowerCase() === 'poseng')].trim().toLowerCase() === trimmedTerm
-      );
+      if (!allWords.length) {
+        resultDiv.innerHTML = "<div class='empty'>No data found in CSV.</div>"; return;
+      }
 
-      if (matches.length === 0) {
-        resultDiv.innerHTML = "<div class='empty'>No result found.</div>";
+      // Find actual input field names in user's file
+      const entry = allWords[0];
+      const posEngField = matchField(entry, 'posEng');
+      const wrdField = matchField(entry, 'Wrd');
+      const meaningsField = matchField(entry, 'Meanings');
+      const posAsmField = matchField(entry, 'posAsm');
+      const ideaIdField = matchField(entry, 'IdeaID');
+      if (!posEngField || !wrdField) {
+        resultDiv.innerHTML = "<div class='empty'>Check your CSV headers: 'posEng' and 'Wrd' columns required.</div>";
         return;
       }
 
-      // For each match: list Assamese word (Wrd) with corresponding meaning (Meanings)
-      const wordMeaningPairs = matches.map(entry => {
-        const assamese = entry[Object.keys(entry).find(h=>h.toLowerCase()==='wrd')] || "";
-        let meaning = entry[Object.keys(entry).find(h=>h.toLowerCase()==='meanings')] || "";
-        meaning = meaning.replace(/["']/g,"").trim();
-        return meaning ? `${assamese} (${meaning})` : assamese;
-      }).filter(e=>e);
+      // Find ALL matches (case-and-quote-insensitive)
+      const matches = allWords.filter(entry => {
+        let e = entry[posEngField] || "";
+        e = e.replace(/["']/g,"").trim().toLowerCase();
+        return e === trimmedTerm;
+      });
 
-      // Unique posAsm and IdeaIDs (case-insensitive)
-      const posAsmField = Object.keys(matches[0]).find(h=>h.toLowerCase()==='posasm');
-      const ideaIdField = Object.keys(matches[0]).find(h=>h.toLowerCase()==='ideaid');
-      const uniquePosAsm = matches.map(entry => entry[posAsmField] ? entry[posAsmField].trim() : "").filter(Boolean);
-      const uniqueIdeaID = matches.map(entry => entry[ideaIdField] ? entry[ideaIdField].trim() : "").filter(Boolean);
+      if (!matches.length) {
+        resultDiv.innerHTML =
+          `<div class='empty'>No result found for "<b>${sanitize(term)}</b>".<br><br>
+           <b>Check your CSV Field Names:</b> ${Object.keys(entry).join(", ")}<br>
+           <b>First CSV Record:</b><pre>${JSON.stringify(entry,null,2)}</pre>
+           <b>Tip:</b> The search word must match 'posEng' exactly.<br>
+           <b>For debugging:</b> Does your CSV's 'posEng' values really include: <code>${sanitize(term)}</code>?
+           </div>`;
+        return;
+      }
+
+      // Compose Assamese + meanings (no quotes)
+      const wordMeaningPairs = matches.map(entry => {
+        const wrd = entry[wrdField] ? entry[wrdField].replace(/["']/g,'').trim() : "";
+        const mean = meaningsField ? (entry[meaningsField]||"").replace(/["']/g,"").trim() : "";
+        return mean ? `${wrd} (${mean})` : wrd;
+      });
+      const uniquePosAsm = posAsmField ? [...new Set(matches.map(entry => entry[posAsmField] ? entry[posAsmField].replace(/["']/g,'').trim() : "").filter(Boolean))] : [];
+      const uniqueIdeaID = ideaIdField ? [...new Set(matches.map(entry => entry[ideaIdField] ? entry[ideaIdField].replace(/["']/g,'').trim() : "").filter(Boolean))] : [];
 
       resultDiv.innerHTML = `
         <div style="margin-bottom:1rem;">
           <div class="word">${sanitize(wordMeaningPairs.join(', '))}</div>
-          ${uniquePosAsm.length ? `<div class="partofspeech">${sanitize([...new Set(uniquePosAsm)].join(', '))}</div>` : ''}
-          ${uniqueIdeaID.length ? `<div style="color:#bbb; font-size:0.9em; margin-top:0.2rem;">IdeaID: ${sanitize([...new Set(uniqueIdeaID)].join(', '))}</div>` : ""}
+          ${uniquePosAsm.length ? `<div class="partofspeech">${sanitize(uniquePosAsm.join(', '))}</div>` : ''}
+          ${uniqueIdeaID.length ? `<div style="color:#bbb; font-size:0.9em; margin-top:0.2rem;">IdeaID: ${sanitize(uniqueIdeaID.join(', '))}</div>` : ""}
         </div>
       `;
     }
+
     function sanitize(str) {
       const d = document.createElement('div');
       d.textContent = str;
       return d.innerHTML;
     }
 
-    searchBtn.addEventListener('click', () => {
-      showResult(searchInput.value);
-    });
-    searchInput.addEventListener('keyup', function(e) {
-      if (e.key === 'Enter') showResult(this.value);
-    });
-    clearBtn.addEventListener('click', function() {
-      searchInput.value = "";
-      resultDiv.innerHTML = "";
-      searchInput.focus();
-    });
-    window.onload = function() {
-      searchInput.focus();
-    };
+    searchBtn.addEventListener('click', () => { showResult(searchInput.value); });
+    searchInput.addEventListener('keyup', function(e) { if (e.key === 'Enter') showResult(this.value); });
+    clearBtn.addEventListener('click', function() { searchInput.value = ""; resultDiv.innerHTML = ""; searchInput.focus(); });
+    window.onload = function() { searchInput.focus(); };
   </script>
 </body>
 </html>
