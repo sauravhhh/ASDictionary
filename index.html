@@ -2,161 +2,923 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>অর্থ</title>
+  <title>অর্থ - Professional Assamese Dictionary</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    html { box-sizing: border-box; } *, *:before, *:after { box-sizing: inherit; }
-    body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; color: #222; margin: 0;}
-    header { padding: 2.2rem 0.8rem 1rem; text-align: left;}
-    .dot { display: inline-block; width: 12px; height: 12px; background: #e12d39; border-radius: 50%; margin-right: 12px; vertical-align: middle; }
-    .title { font-size: 2rem; font-weight: bold; vertical-align: middle; letter-spacing: 0.02em;}
-    .title span:last-child { color: #e12d39; }
-    .subtitle { color: #888; font-size: 1rem; letter-spacing: 0.7px; margin-left: 0.5rem; margin-top: 0.6rem;}
-    .container { max-width: 420px; margin: 2rem auto; background: #fff; border-radius: 10px; padding: 1.5rem 1rem 0.5rem; box-shadow: 0 2px 8px #efefef;}
-    .search-box { width: 100%; font-size: 1.05rem; padding: 0.85rem 1rem; border: 1px solid #dedede; border-radius: 7px; margin-bottom: 0.8rem; outline: none; background: #fafbfc; transition: border 0.15s;}
-    .search-box:focus { border-color: #e12d39;}
-    .btn-row { display: flex; justify-content: flex-end; gap: 0.7rem; margin-bottom: 1.2rem;}
-    button { font-size: 1rem; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; outline: none;}
-    .search-btn { background: #e12d39; color: #fff;}
-    .search-btn:active, .search-btn:focus { background: #b71a26; }
-    .clear-btn { background: #f4f4f6; color: #888;}
-    .clear-btn:active, .clear-btn:focus { background: #eee;}
-    .result { padding-top: 0.5rem;}
-    .footer { text-align: center; margin: 2.5rem 0 1rem; font-size: 1rem; color: #222; font-weight: 500; }
-    @media (max-width: 520px) { .container { margin: 1rem; padding: 1.2rem 0.4rem 0.3rem; } }
+    :root {
+      --primary-color: #e12d39;
+      --primary-dark: #b71a26;
+      --secondary-color: #f8f9fa;
+      --text-color: #333;
+      --light-text: #666;
+      --border-color: #e0e0e0;
+      --shadow: 0 2px 10px rgba(0,0,0,0.1);
+      --radius: 8px;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f5f7fa;
+      color: var(--text-color);
+      line-height: 1.6;
+    }
+    
+    header {
+      background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+      padding: 1.5rem 0;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    
+    .header-content {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+    }
+    
+    .dot {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      background: var(--primary-color);
+      border-radius: 50%;
+      margin-right: 12px;
+    }
+    
+    .title {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--text-color);
+    }
+    
+    .title span:last-child {
+      color: var(--primary-color);
+    }
+    
+    .subtitle {
+      color: var(--light-text);
+      font-size: 0.95rem;
+      margin-left: 26px;
+      margin-top: 2px;
+    }
+    
+    .lang-toggle {
+      display: flex;
+      background: var(--secondary-color);
+      border-radius: 20px;
+      padding: 3px;
+    }
+    
+    .lang-toggle button {
+      background: none;
+      border: none;
+      padding: 5px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+    
+    .lang-toggle button.active {
+      background: white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      color: var(--primary-color);
+      font-weight: 600;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
+    }
+    
+    .search-container {
+      background: white;
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+      margin-bottom: 2rem;
+    }
+    
+    .search-box {
+      width: 100%;
+      font-size: 1.1rem;
+      padding: 0.9rem 1.2rem;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      margin-bottom: 1rem;
+      outline: none;
+      transition: border 0.2s, box-shadow 0.2s;
+    }
+    
+    .search-box:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(225, 45, 57, 0.1);
+    }
+    
+    .search-options {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    
+    .search-type {
+      display: flex;
+      gap: 0.5rem;
+    }
+    
+    .search-type label {
+      display: flex;
+      align-items: center;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    
+    .search-type input {
+      margin-right: 0.3rem;
+    }
+    
+    .btn-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.8rem;
+    }
+    
+    button {
+      font-size: 1rem;
+      padding: 0.7rem 1.2rem;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      outline: none;
+      transition: all 0.2s;
+      font-weight: 500;
+    }
+    
+    .search-btn {
+      background: var(--primary-color);
+      color: white;
+    }
+    
+    .search-btn:hover {
+      background: var(--primary-dark);
+    }
+    
+    .clear-btn {
+      background: var(--secondary-color);
+      color: var(--light-text);
+    }
+    
+    .clear-btn:hover {
+      background: #e9ecef;
+    }
+    
+    .result {
+      margin-bottom: 2rem;
+    }
+    
+    .word-card {
+      background: white;
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+      margin-bottom: 1.5rem;
+      transition: transform 0.2s;
+    }
+    
+    .word-card:hover {
+      transform: translateY(-2px);
+    }
+    
+    .word-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      padding-bottom: 0.8rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .word-title {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--text-color);
+    }
+    
+    .word-actions {
+      display: flex;
+      gap: 0.8rem;
+    }
+    
+    .word-actions button {
+      background: none;
+      border: none;
+      color: var(--light-text);
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    
+    .word-actions button:hover {
+      color: var(--primary-color);
+    }
+    
+    .word-actions button.active {
+      color: var(--primary-color);
+    }
+    
+    .word-pronunciation {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1rem;
+      color: var(--light-text);
+      font-size: 0.95rem;
+    }
+    
+    .word-pronunciation i {
+      margin-right: 0.5rem;
+      color: var(--primary-color);
+    }
+    
+    .word-type {
+      display: inline-block;
+      background: var(--secondary-color);
+      color: var(--light-text);
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      margin-bottom: 1rem;
+    }
+    
+    .definition-section {
+      margin-bottom: 1.2rem;
+    }
+    
+    .section-title {
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--text-color);
+      display: flex;
+      align-items: center;
+    }
+    
+    .section-title i {
+      margin-right: 0.5rem;
+      color: var(--primary-color);
+    }
+    
+    .definition-list {
+      list-style-type: none;
+    }
+    
+    .definition-list li {
+      margin-bottom: 0.8rem;
+      padding-left: 1.5rem;
+      position: relative;
+    }
+    
+    .definition-list li:before {
+      content: "•";
+      position: absolute;
+      left: 0;
+      color: var(--primary-color);
+      font-weight: bold;
+    }
+    
+    .example-section {
+      margin-bottom: 1.2rem;
+    }
+    
+    .example {
+      background: var(--secondary-color);
+      border-left: 3px solid var(--primary-color);
+      padding: 0.8rem 1rem;
+      border-radius: 0 var(--radius) var(--radius) 0;
+      margin-bottom: 0.8rem;
+      font-style: italic;
+    }
+    
+    .related-words {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    
+    .related-word {
+      background: var(--secondary-color);
+      color: var(--text-color);
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .related-word:hover {
+      background: var(--primary-color);
+      color: white;
+    }
+    
+    .no-results {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--light-text);
+    }
+    
+    .no-results i {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      color: var(--border-color);
+    }
+    
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 3rem;
+    }
+    
+    .loading i {
+      font-size: 2rem;
+      color: var(--primary-color);
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .footer {
+      text-align: center;
+      margin: 3rem 0 2rem;
+      font-size: 0.95rem;
+      color: var(--light-text);
+    }
+    
+    .footer a {
+      color: var(--primary-color);
+      text-decoration: none;
+    }
+    
+    .footer a:hover {
+      text-decoration: underline;
+    }
+    
+    @media (max-width: 768px) {
+      .header-content {
+        flex-direction: column;
+        gap: 1rem;
+      }
+      
+      .search-options {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.8rem;
+      }
+      
+      .word-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.8rem;
+      }
+      
+      .word-actions {
+        align-self: flex-end;
+      }
+    }
   </style>
 </head>
 <body>
   <header>
-    <span class="dot"></span>
-    <span class="title">অর্থ<span>.</span></span>
-    <div class="subtitle">Assamese Dictionary</div>
-  </header>
-  <div class="container">
-    <input class="search-box" type="text" autocomplete="off" autocapitalize="off" spellcheck="false"
-      placeholder="Search for Assamese or English word…" id="searchInput">
-    <div class="btn-row">
-      <button class="clear-btn" id="clearBtn" title="Clear">✕</button>
-      <button class="search-btn" id="searchBtn" title="Search">Search</button>
+    <div class="header-content">
+      <div>
+        <div class="logo">
+          <span class="dot"></span>
+          <span class="title">অর্থ<span>.</span></span>
+        </div>
+        <div class="subtitle">Professional Assamese Dictionary</div>
+      </div>
+      <div class="lang-toggle">
+        <button class="active" id="enToAsBtn">English → Assamese</button>
+        <button id="asToEnBtn">Assamese → English</button>
+      </div>
     </div>
-    <div class="result" id="result"></div>
+  </header>
+  
+  <div class="container">
+    <div class="search-container">
+      <input class="search-box" type="text" autocomplete="off" autocapitalize="off" spellcheck="false"
+        placeholder="Search for a word..." id="searchInput">
+      
+      <div class="search-options">
+        <div class="search-type">
+          <label>
+            <input type="radio" name="searchType" value="exact" checked>
+            Exact Match
+          </label>
+          <label>
+            <input type="radio" name="searchType" value="contains">
+            Contains
+          </label>
+          <label>
+            <input type="radio" name="searchType" value="starts">
+            Starts With
+          </label>
+        </div>
+      </div>
+      
+      <div class="btn-row">
+        <button class="clear-btn" id="clearBtn" title="Clear">
+          <i class="fas fa-times"></i> Clear
+        </button>
+        <button class="search-btn" id="searchBtn" title="Search">
+          <i class="fas fa-search"></i> Search
+        </button>
+      </div>
+    </div>
+    
+    <div class="result" id="result">
+      <div class="loading">
+        <i class="fas fa-spinner"></i>
+      </div>
+    </div>
   </div>
-  <div class="footer">Made with ❤️ by Sauravhhh</div>
-  <script>
+  
+  <div class="footer">
+    Made with <i class="fas fa-heart" style="color: var(--primary-color);"></i> by Sauravhhh | 
+    <a href="#">About</a> | 
+    <a href="#">Contribute</a> | 
+    <a href="#">Contact</a>
+    </div>
+      <script>
+    // Sample dictionary data for fallback
+    const sampleData = [
+      {
+        "Wrd": "ভাল",
+        "posAsm": "adjective",
+        "Definition": "good",
+        "Meanings": "good, nice, fine, well",
+        "Example": "এই কিতাপখন ভাল। (This book is good.)",
+        "Pronunciation": "bhal"
+      },
+      {
+        "Wrd": "মোৰ",
+        "posAsm": "pronoun",
+        "Definition": "my",
+        "Meanings": "my, mine",
+        "Example": "মোৰ নাম সৌৰভ। (My name is Saurav.)",
+        "Pronunciation": "mor"
+      },
+      {
+        "Wrd": "নমস্কাৰ",
+        "posAsm": "interjection",
+        "Definition": "hello",
+        "Meanings": "hello, greetings",
+        "Example": "নমস্কাৰ! কেনে আছা? (Hello! How are you?)",
+        "Pronunciation": "nomoskar"
+      },
+      {
+        "Wrd": "ধন্যবাদ",
+        "posAsm": "interjection",
+        "Definition": "thank you",
+        "Meanings": "thank you, thanks",
+        "Example": "তোমাৰ সহায়ৰ বাবে ধন্যবাদ। (Thank you for your help.)",
+        "Pronunciation": "dhonyobad"
+      },
+      {
+        "Wrd": "ঘৰ",
+        "posAsm": "noun",
+        "Definition": "house",
+        "Meanings": "house, home",
+        "Example": "মই ঘৰলৈ যাব লাগিব। (I have to go home.)",
+        "Pronunciation": "ghor"
+      },
+      {
+        "Wrd": "water",
+        "posAsm": "noun",
+        "Definition": "পানী",
+        "Meanings": "পানী, জল",
+        "Example": "I need a glass of water.",
+        "Pronunciation": "পানী (pani)"
+      },
+      {
+        "Wrd": "food",
+        "posAsm": "noun",
+        "Definition": "খাদ্য",
+        "Meanings": "খাদ্য, ভোজন",
+        "Example": "The food was delicious.",
+        "Pronunciation": "খাদ্য (khaadyo)"
+      },
+      {
+        "Wrd": "love",
+        "posAsm": "noun, verb",
+        "Definition": "ভালপোৱা",
+        "Meanings": "ভালপোৱা, স্নেহ",
+        "Example": "I love my family.",
+        "Pronunciation": "ভালপোৱা (bhalpowa)"
+      }
+    ];
+    
     let allWords = [];
     let csvLoaded = false;
+    let searchDirection = 'enToAs'; // Default: English to Assamese
+    
     const searchInput = document.getElementById('searchInput');
     const resultDiv = document.getElementById('result');
     const clearBtn = document.getElementById('clearBtn');
     const searchBtn = document.getElementById('searchBtn');
-
+    const enToAsBtn = document.getElementById('enToAsBtn');
+    const asToEnBtn = document.getElementById('asToEnBtn');
+    
+    // Toggle search direction
+    enToAsBtn.addEventListener('click', () => {
+      searchDirection = 'enToAs';
+      enToAsBtn.classList.add('active');
+      asToEnBtn.classList.remove('active');
+      updatePlaceholder();
+    });
+    
+    asToEnBtn.addEventListener('click', () => {
+      searchDirection = 'asToEn';
+      asToEnBtn.classList.add('active');
+      enToAsBtn.classList.remove('active');
+      updatePlaceholder();
+    });
+    
+    function updatePlaceholder() {
+      if (searchDirection === 'enToAs') {
+        searchInput.placeholder = "Search for an English word...";
+      } else {
+        searchInput.placeholder = "Search for an Assamese word...";
+      }
+    }
+    
+    // Initialize placeholder
+    updatePlaceholder();
+    
+    // Parse CSV function
     function parseCSV(csvText) {
+      if (!csvText) return [];
+      
       const lines = csvText.split(/\r?\n/).filter(l => l.trim());
       if (lines.length < 2) return [];
+      
       const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g,"").trim());
+      
       return lines.slice(1).map(line => {
         let cells = [];
         let cell = '';
         let inQuotes = false;
+        
         for (let i = 0; i < line.length; i++) {
           const char = line[i];
-          if (char === '"' && !inQuotes) { inQuotes = true; continue; }
-          if (char === '"' && inQuotes) { inQuotes = false; continue; }
-          if (char === ',' && !inQuotes) { cells.push(cell.trim()); cell = ''; continue; }
+          if (char === '"' && !inQuotes) { 
+            inQuotes = true; 
+            continue; 
+          }
+          if (char === '"' && inQuotes) { 
+            inQuotes = false; 
+            continue; 
+          }
+          if (char === ',' && !inQuotes) { 
+            cells.push(cell.trim()); 
+            cell = ''; 
+            continue; 
+          }
           cell += char;
         }
+        
         cells.push(cell.trim());
+        
         while (cells.length < headers.length) cells.push("");
+        
         let obj = {};
         headers.forEach((h, idx) => obj[h.trim()] = cells[idx] ? cells[idx].replace(/^"|"$/g,"").trim() : '');
         return obj;
       });
     }
-
+    
+    // Try to load CSV files, but fall back to sample data if they fail
     Promise.all([
       fetch('xobdo-words-AS.csv').then(r => r.text()).catch(() => ''),
       fetch('xobdo-words-EN.csv').then(r => r.text()).catch(() => '')
     ]).then(([asCSV, enCSV]) => {
       const asData = parseCSV(asCSV);
       const enData = parseCSV(enCSV);
-      allWords = asData.concat(enData);
+      
+      if (asData.length > 0 || enData.length > 0) {
+        allWords = asData.concat(enData);
+        csvLoaded = true;
+      } else {
+        // Use sample data if CSV files are empty or not found
+        allWords = sampleData;
+        csvLoaded = true;
+      }
+      
+      // Clear loading indicator
+      resultDiv.innerHTML = "";
+    }).catch(() => {
+      // If there's an error loading the CSV files, use sample data
+      allWords = sampleData;
       csvLoaded = true;
       resultDiv.innerHTML = "";
     });
-
+    
+    // Helper function to match field names
     function matchField(entry, name) {
       return Object.keys(entry).find(k => k.replace(/\s/g,'').toLowerCase() === name.replace(/\s/g,'').toLowerCase());
     }
-
+    
+    // Function to display search results
     function showResult(term) {
       resultDiv.innerHTML = "";
+      
       if (!csvLoaded) {
-        resultDiv.innerHTML = "<div class='empty'>Dictionary loading, please wait…</div>";
+        resultDiv.innerHTML = "<div class='loading'><i class='fas fa-spinner'></i></div>";
         return;
       }
+      
       const trimmedTerm = term.replace(/["']/g, '').trim().toLowerCase();
-      if (!trimmedTerm) return;
-
-      if (!allWords.length) {
-        resultDiv.innerHTML = "<div class='empty'>No data found in CSV.</div>";
+      
+      if (!trimmedTerm) {
+        resultDiv.innerHTML = "<div class='no-results'><i class='fas fa-search'></i><p>Enter a word to search</p></div>";
         return;
       }
-
+      
+      if (!allWords.length) {
+        resultDiv.innerHTML = "<div class='no-results'><i class='fas fa-exclamation-circle'></i><p>No dictionary data available</p></div>";
+        return;
+      }
+      
+      // Get field names from the first entry
       const entry = allWords[0];
       const wrdField = matchField(entry, 'Wrd');
       const posAsmField = matchField(entry, 'posAsm');
       const defField = matchField(entry, 'Definition');
       const meaningsField = matchField(entry, 'Meanings');
-
+      const exampleField = matchField(entry, 'Example');
+      const pronunciationField = matchField(entry, 'Pronunciation');
+      
       if (!wrdField || !defField) {
-        resultDiv.innerHTML = "<div class='empty'>Check your CSV headers: 'Wrd', 'Definition' required.</div>";
+        resultDiv.innerHTML = "<div class='no-results'><i class='fas fa-exclamation-circle'></i><p>Dictionary format error</p></div>";
         return;
       }
-
-      // Match exact on 'Wrd' or on meanings
-      const matches = allWords.filter(entry => {
-        let wrd = (entry[wrdField] || '').replace(/["']/g, '').trim().toLowerCase();
-        let mean = (entry[meaningsField] || '').replace(/["']/g, '').trim().toLowerCase();
-        return wrd === trimmedTerm || mean.split(/[,;]+/).map(m => m.trim()).includes(trimmedTerm);
-      });
-
+      
+      // Get search type
+      const searchType = document.querySelector('input[name="searchType"]:checked').value;
+      
+      // Filter matches based on search direction and type
+      let matches = [];
+      
+      if (searchDirection === 'enToAs') {
+        // English to Assamese: search in definitions
+        matches = allWords.filter(entry => {
+          const definition = (entry[defField] || '').replace(/["']/g, '').trim().toLowerCase();
+          const meanings = (entry[meaningsField] || '').replace(/["']/g, '').trim().toLowerCase();
+          
+          if (searchType === 'exact') {
+            return definition === trimmedTerm || 
+                   meanings.split(/[,;]+/).map(m => m.trim()).includes(trimmedTerm);
+          } else if (searchType === 'contains') {
+            return definition.includes(trimmedTerm) || meanings.includes(trimmedTerm);
+          } else if (searchType === 'starts') {
+            return definition.startsWith(trimmedTerm) || meanings.startsWith(trimmedTerm);
+          }
+          return false;
+        });
+      } else {
+        // Assamese to English: search in words
+        matches = allWords.filter(entry => {
+          const word = (entry[wrdField] || '').replace(/["']/g, '').trim().toLowerCase();
+          
+          if (searchType === 'exact') {
+            return word === trimmedTerm;
+          } else if (searchType === 'contains') {
+            return word.includes(trimmedTerm);
+          } else if (searchType === 'starts') {
+            return word.startsWith(trimmedTerm);
+          }
+          return false;
+        });
+      }
+      
       if (!matches.length) {
-        resultDiv.innerHTML = `<div class='empty'>No result found for "<b>${sanitize(term)}</b>".</div>`;
+        resultDiv.innerHTML = `<div class='no-results'><i class='fas fa-search'></i><p>No results found for "<b>${sanitize(term)}</b>"</p></div>`;
         return;
       }
-
-      // Only use the first relevant match
-      const wordObj = matches[0];
-      const assameseWord = wordObj[wrdField] || '';
-      const posAsm = wordObj[posAsmField] || '';
-      const definition = wordObj[defField] || '';
-
-      // Render output
-      resultDiv.innerHTML = `
-        <div style="background:#fafbfc; border-radius:12px; border:1.4px solid #f1f1f1; padding:2em 1.2em 2em; box-shadow:0 2px 8px #f5f5f5; max-width:420px; margin:auto;">
-          <div style="display:flex;align-items:center;gap:0.6em;margin-bottom:0.1em;">
-            <div style="font-size:2.3rem;font-weight:800;letter-spacing:0.04em;">${sanitize(assameseWord)}</div>
-            <div style="font-size:1.5rem; color:#ccc; cursor:pointer;user-select:none;" title="Add to favourites">&#9825;</div>
+      
+      // Display all matches
+      matches.forEach((wordObj, index) => {
+        const word = wordObj[wrdField] || '';
+        const posAsm = wordObj[posAsmField] || '';
+        const definition = wordObj[defField] || '';
+        const meanings = wordObj[meaningsField] || '';
+        const example = wordObj[exampleField] || '';
+        const pronunciation = wordObj[pronunciationField] || '';
+        
+        // Create word card
+        const wordCard = document.createElement('div');
+        wordCard.className = 'word-card';
+        
+        // Determine if this is an Assamese or English word based on content
+        const isAssameseWord = /[\u0980-\u09FF]/.test(word);
+        
+        // Render word card
+        wordCard.innerHTML = `
+          <div class="word-header">
+            <div class="word-title">${sanitize(word)}</div>
+            <div class="word-actions">
+              <button title="Pronounce" onclick="pronounceWord('${sanitize(word)}', ${isAssameseWord})">
+                <i class="fas fa-volume-up"></i>
+              </button>
+              <button title="Add to favorites" class="favorite-btn" onclick="toggleFavorite(this)">
+                <i class="far fa-heart"></i>
+              </button>
+              <button title="Share" onclick="shareWord('${sanitize(word)}')">
+                <i class="fas fa-share-alt"></i>
+              </button>
+            </div>
           </div>
-          ${posAsm ? `<div style="font-style:italic; font-size:1.06em; color:#8d99ae; margin:0.18em 0 1.08em;">${sanitize(posAsm)}</div>` : "<div style='margin-bottom:1.1em;'></div>"}
-          <div style="margin-bottom:0.25em;">
-            <b style="font-size:1.11em; color:#222;">Definition</b><br>
-            <span style="font-size:1.10em">${sanitize(definition)}</span>
+          
+          ${pronunciation ? `
+            <div class="word-pronunciation">
+              <i class="fas fa-microphone"></i>
+              <span>Pronunciation: ${sanitize(pronunciation)}</span>
+            </div>
+          ` : ''}
+          
+          ${posAsm ? `<div class="word-type">${sanitize(posAsm)}</div>` : ''}
+          
+          <div class="definition-section">
+            <div class="section-title">
+              <i class="fas fa-book"></i>
+              ${isAssameseWord ? 'English Meaning' : 'Assamese Meaning'}
+            </div>
+            <div>${sanitize(definition)}</div>
+            ${meanings && meanings !== definition ? `
+              <div style="margin-top: 0.5rem; font-size: 0.95rem; color: var(--light-text);">
+                Other meanings: ${sanitize(meanings)}
+              </div>
+            ` : ''}
           </div>
-        </div>
+          
+          ${example ? `
+            <div class="example-section">
+              <div class="section-title">
+                <i class="fas fa-quote-left"></i>
+                Example
+              </div>
+              <div class="example">${sanitize(example)}</div>
+            </div>
+          ` : ''}
+          
+          <div class="related-section">
+            <div class="section-title">
+              <i class="fas fa-link"></i>
+              Related Words
+            </div>
+            <div class="related-words">
+              ${getRelatedWords(word, isAssameseWord)}
+            </div>
+          </div>
+        `;
+        
+        resultDiv.appendChild(wordCard);
+      });
+    }
+    
+    // Get related words (simplified version - in a real app, this would be more sophisticated)
+    function getRelatedWords(word, isAssamese) {
+      // For demo purposes, we'll just return some sample related words
+      if (isAssamese) {
+        if (word.includes('ভাল')) {
+          return `
+            <span class="related-word" onclick="searchWord('ভাল')">ভাল</span>
+            <span class="related-word" onclick="searchWord('ভালে')">ভালে</span>
+            <span class="related-word" onclick="searchWord('ভালপোৱা')">ভালপোৱা</span>
+            <span class="related-word" onclick="searchWord('ভালদৰে')">ভালদৰে</span>
+          `;
+        } else if (word.includes('ঘৰ')) {
+          return `
+            <span class="related-word" onclick="searchWord('ঘৰ')">ঘৰ</span>
+            <span class="related-word" onclick="searchWord('ঘৰুৱা')">ঘৰুৱা</span>
+            <span class="related-word" onclick="searchWord('ঘৰচীয়া')">ঘৰচীয়া</span>
+            <span class="related-word" onclick="searchWord('ঘৰলৈ')">ঘৰলৈ</span>
+          `;
+        }
+      } else {
+        if (word.includes('love')) {
+          return `
+            <span class="related-word" onclick="searchWord('love')">love</span>
+            <span class="related-word" onclick="searchWord('lovely')">lovely</span>
+            <span class="related-word" onclick="searchWord('lover')">lover</span>
+            <span class="related-word" onclick="searchWord('beloved')">beloved</span>
+          `;
+        } else if (word.includes('water')) {
+          return `
+            <span class="related-word" onclick="searchWord('water')">water</span>
+            <span class="related-word" onclick="searchWord('watery')">watery</span>
+            <span class="related-word" onclick="searchWord('waterfall')">waterfall</span>
+            <span class="related-word" onclick="searchWord('underwater')">underwater</span>
+          `;
+        }
+      }
+      
+      // Default related words
+      return `
+        <span class="related-word" onclick="searchWord('${sanitize(word)}')">${sanitize(word)}</span>
       `;
     }
-
+    
+    // Function to search for a word (used by related words)
+    function searchWord(word) {
+      searchInput.value = word;
+      showResult(word);
+    }
+    
+    // Function to pronounce a word (simplified version)
+    function pronounceWord(word, isAssamese) {
+      // In a real app, this would use the Web Speech API or a text-to-speech service
+      alert(`Pronouncing: ${word}\n\nIn a real implementation, this would use text-to-speech technology.`);
+    }
+    
+    // Function to toggle favorite
+    function toggleFavorite(button) {
+      const icon = button.querySelector('i');
+      if (icon.classList.contains('far')) {
+        icon.classList.remove('far');
+        icon.classList.add('fas');
+        button.classList.add('active');
+      } else {
+        icon.classList.remove('fas');
+        icon.classList.add('far');
+        button.classList.remove('active');
+      }
+    }
+    
+    // Function to share a word
+    function shareWord(word) {
+      // In a real app, this would use the Web Share API or create shareable links
+      if (navigator.share) {
+        navigator.share({
+          title: 'অর্থ - Assamese Dictionary',
+          text: `Check out the meaning of "${word}" in the Assamese Dictionary`,
+          url: window.location.href
+        });
+      } else {
+        // Fallback for browsers that don't support the Web Share API
+        const shareText = `Check out the meaning of "${word}" in the Assamese Dictionary: ${window.location.href}`;
+        prompt('Copy this link to share:', shareText);
+      }
+    }
+    
+    // Function to sanitize HTML
     function sanitize(str) {
       const d = document.createElement('div');
       d.textContent = str;
       return d.innerHTML;
     }
-
-    searchBtn.addEventListener('click', () => { showResult(searchInput.value); });
-    searchInput.addEventListener('keyup', function(e) { if (e.key === 'Enter') showResult(this.value); });
-    clearBtn.addEventListener('click', function() { searchInput.value = ""; resultDiv.innerHTML = ""; searchInput.focus(); });
-    window.onload = function() { searchInput.focus(); };
+    
+    // Event listeners
+    searchBtn.addEventListener('click', () => { 
+      showResult(searchInput.value); 
+    });
+    
+    searchInput.addEventListener('keyup', function(e) { 
+      if (e.key === 'Enter') {
+        showResult(this.value);
+      }
+    });
+    
+    clearBtn.addEventListener('click', function() { 
+      searchInput.value = ""; 
+      resultDiv.innerHTML = "<div class='no-results'><i class='fas fa-search'></i><p>Enter a word to search</p></div>"; 
+      searchInput.focus(); 
+    });
+    
+    // Initialize with focus on search box
+    window.onload = function() { 
+      searchInput.focus(); 
+    };
   </script>
 </body>
 </html>
