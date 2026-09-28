@@ -123,6 +123,14 @@
   @keyframes spin { to { transform:rotate(360deg); } }
   .loading-text { text-align:center; color:var(--muted); font-size:14px; padding-bottom:40px; }
 
+  .toast {
+    position:fixed; left:50%; bottom:24px; transform:translate(-50%,12px);
+    background:var(--text); color:var(--bg); padding:13px 20px; border-radius:12px;
+    font-size:14px; font-weight:600; max-width:calc(100vw - 40px); text-align:center;
+    opacity:0; pointer-events:none; transition:all .25s ease; z-index:100;
+  }
+  .toast.show { opacity:1; transform:translate(-50%,0); }
+
   .foot { text-align:center; color:var(--muted); font-size:13px; padding:24px 16px 40px; }
 </style>
 </head>
@@ -150,6 +158,8 @@
 <main class="wrap">
   <div id="result"></div>
 </main>
+
+<div class="toast" id="toast"></div>
 
 <footer class="foot">Made with ❤️ by sauravhhh</footer>
 
@@ -190,11 +200,13 @@
     setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
   });
 
-  /* ---------- favorites (persisted) ---------- */
-  var favorites = {};
-  try { favorites = JSON.parse(localStorage.getItem('asdict-favs') || '{}'); } catch (e) { favorites = {}; }
-  function saveFavs() {
-    try { localStorage.setItem('asdict-favs', JSON.stringify(favorites)); } catch (e) {}
+  /* ---------- toast ---------- */
+  var toastEl = $('toast'), toastTimer = null;
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 2200);
   }
 
   /* ---------- helpers ---------- */
@@ -324,7 +336,6 @@
       var meanings = norm(entry.Meanings).split(',').map(function (m) { return m.trim(); })
         .filter(Boolean);
       var rel = relatedWords(entry);
-      var isFav = !!favorites[word];
 
       var card = document.createElement('div');
       card.className = 'word-card';
@@ -332,9 +343,6 @@
         '<div class="word-header">' +
           '<div class="word-title">' + sanitize(word) + '</div>' +
           '<div class="word-actions">' +
-            '<button title="Listen" aria-label="Pronounce" data-act="speak"><i class="fas fa-volume-up"></i></button>' +
-            '<button title="Favorite" aria-label="Favorite" data-act="fav" class="' + (isFav ? 'active' : '') + '">' +
-              '<i class="' + (isFav ? 'fas' : 'far') + ' fa-heart"></i></button>' +
             '<button title="Share" aria-label="Share" data-act="share"><i class="fas fa-share-alt"></i></button>' +
           '</div>' +
         '</div>' +
@@ -382,41 +390,21 @@
     var word = card ? card.dataset.word : '';
     if (!word) return;
     var act = btn.dataset.act;
-    if (act === 'speak') pronounceWord(word);
-    else if (act === 'fav') toggleFavorite(btn, word);
-    else if (act === 'share') shareWord(word);
+    if (act === 'share') shareWord(word);
   });
 
-  function pronounceWord(word) {
-    try {
-      if (!('speechSynthesis' in window)) return;
-      var u = new SpeechSynthesisUtterance(word);
-      u.lang = isAssamese(word) ? 'as-IN' : 'en-US';
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(u);
-    } catch (e) {}
-  }
-
-  function toggleFavorite(btn, word) {
-    var icon = btn.querySelector('i');
-    if (favorites[word]) {
-      delete favorites[word];
-      icon.className = 'far fa-heart';
-      btn.classList.remove('active');
-    } else {
-      favorites[word] = 1;
-      icon.className = 'fas fa-heart';
-      btn.classList.add('active');
-    }
-    saveFavs();
-  }
-
   function shareWord(word) {
-    var text = 'Meaning of "' + word + '" — অর্থ Assamese Dictionary ' + window.location.href;
+    var text = 'Meaning of "' + word + '" — অর্থ Assamese Dictionary';
+    var url = window.location.href;
     if (navigator.share) {
-      navigator.share({ title: 'অর্থ - Assamese Dictionary', text: text }).catch(function () {});
+      navigator.share({ title: 'অর্থ - Assamese Dictionary', text: text, url: url })
+        .catch(function () {});
     } else if (navigator.clipboard) {
-      navigator.clipboard.writeText(text).then(function () {}, function () {});
+      navigator.clipboard.writeText(text + ' ' + url).then(
+        function () { toast('Copied to clipboard'); },
+        function () { prompt('Copy to share:', text + ' ' + url); });
+    } else {
+      prompt('Copy to share:', text + ' ' + url);
     }
   }
 })();
