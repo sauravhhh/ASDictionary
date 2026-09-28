@@ -516,38 +516,7 @@
     }
     function norm(s) { return (s == null ? '' : String(s)).replace(/["']/g, '').trim(); }
 
-    /* ---------- CSV parsing (handles quoted commas and "" escapes) ---------- */
-    function parseCSV(csvText) {
-      if (!csvText) return [];
-      const lines = csvText.split(/\r?\n/).filter(l => l.trim());
-      if (lines.length < 2) return [];
-      const headers = splitLine(lines[0]).map(h => h.trim());
-      return lines.slice(1).map(line => {
-        const cells = splitLine(line);
-        while (cells.length < headers.length) cells.push('');
-        const obj = {};
-        headers.forEach((h, i) => { obj[h] = (cells[i] || '').trim(); });
-        return obj;
-      });
-    }
-    function splitLine(line) {
-      const cells = [];
-      let cell = '', inQuotes = false;
-      for (let i = 0; i < line.length; i++) {
-        const c = line[i];
-        if (c === '"') {
-          if (inQuotes && line[i + 1] === '"') { cell += '"'; i++; }
-          else { inQuotes = !inQuotes; }
-          continue;
-        }
-        if (c === ',' && !inQuotes) { cells.push(cell); cell = ''; continue; }
-        cell += c;
-      }
-      cells.push(cell);
-      return cells;
-    }
-
-    /* ---------- load data ---------- */
+        /* ---------- load data (JSON: dict2 = Assamese, dict1 = English) ---------- */
     function setLoading() {
       resultDiv.innerHTML = "<div class='loading'><i class='fas fa-spinner'></i></div>" +
         "<p style='text-align:center;color:var(--light-text)'>Loading dictionary…</p>";
@@ -555,10 +524,10 @@
     setLoading();
 
     Promise.all([
-      fetch('xobdo-words-AS.csv').then(r => { if (!r.ok) throw 0; return r.text(); }).catch(() => ''),
-      fetch('xobdo-words-EN.csv').then(r => { if (!r.ok) throw 0; return r.text(); }).catch(() => '')
-    ]).then(([asCSV, enCSV]) => {
-      const words = parseCSV(asCSV).concat(parseCSV(enCSV)).filter(e => norm(e.Wrd));
+      fetch('dict2.json').then(r => { if (!r.ok) throw 0; return r.json(); }).catch(() => []),
+      fetch('dict1.json').then(r => { if (!r.ok) throw 0; return r.json(); }).catch(() => [])
+    ]).then(([asData, enData]) => {
+      const words = asData.concat(enData).filter(e => e && norm(e.Wrd));
       allWords = words.length ? words : sampleData;
       dataReady = true;
       resultDiv.innerHTML = "";
@@ -568,7 +537,7 @@
       resultDiv.innerHTML = "";
     });
 
-    /* ---------- direction toggle ---------- */
+/* ---------- direction toggle ---------- */
     function updatePlaceholder() {
       searchInput.placeholder = searchDirection === 'enToAs'
         ? "Search for an English word..."
