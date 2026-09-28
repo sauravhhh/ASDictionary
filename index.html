@@ -107,14 +107,6 @@
   .definition-list li { padding:9px 0 9px 22px; position:relative; border-bottom:1px solid var(--border); font-size:16px; }
   .definition-list li:last-child { border-bottom:none; }
   .definition-list li:before { content:"•"; position:absolute; left:4px; color:var(--accent); font-weight:bold; }
-  .related-words { display:flex; flex-wrap:wrap; gap:8px; }
-  .related-word {
-    background:var(--input); color:var(--text); border:none; border-radius:999px;
-    padding:10px 16px; font-family:inherit; font-size:14.5px; font-weight:600;
-    cursor:pointer; min-height:42px;
-  }
-  .related-word:active { background:var(--accent); color:#fff; }
-
   .no-results { text-align:center; padding:56px 20px; color:var(--muted); }
   .no-results i { font-size:44px; margin-bottom:14px; color:var(--border); display:block; }
   .no-results p { font-size:15px; }
@@ -244,7 +236,7 @@
 
   function showHint() {
     resultDiv.innerHTML = "<div class='no-results'><i class='fas fa-book-open'></i>" +
-      "<p>Type a word above to look it up.<br>Tap a related word to keep exploring.</p></div>";
+      "<p>Type a word above to look it up.</p></div>";
   }
 
   /* ---------- direction + type controls ---------- */
@@ -294,24 +286,6 @@
     });
   }
 
-  function relatedWords(entry) {
-    var id = String(entry.IdeaID || '');
-    if (!id) return [];
-    var seen = {};
-    seen[norm(entry.Wrd).toLowerCase()] = 1;
-    var out = [];
-    for (var i = 0; i < allWords.length; i++) {
-      var e = allWords[i];
-      if (String(e.IdeaID || '') !== id) continue;
-      var w = norm(e.Wrd), k = w.toLowerCase();
-      if (!w || seen[k]) continue;
-      seen[k] = 1;
-      out.push(w);
-      if (out.length >= 12) break;
-    }
-    return out;
-  }
-
   function showResult(term) {
     resultDiv.innerHTML = "";
     if (!dataReady) { setLoading(); return; }
@@ -335,7 +309,6 @@
       var pos = [norm(entry.posEng), norm(entry.posAsm)].filter(Boolean).join(' · ');
       var meanings = norm(entry.Meanings).split(',').map(function (m) { return m.trim(); })
         .filter(Boolean);
-      var rel = relatedWords(entry);
 
       var card = document.createElement('div');
       card.className = 'word-card';
@@ -353,12 +326,6 @@
               return '<li>' + sanitize(m) + '</li>';
             }).join('') + '</ul>'
           : '<div style="color:var(--muted)">No meanings listed.</div>');
-      if (rel.length) {
-        html += '<div class="section-title"><i class="fas fa-link"></i>Related words</div>' +
-          '<div class="related-words">' + rel.map(function (r) {
-            return '<button class="related-word" data-word="' + escAttr(r) + '">' + sanitize(r) + '</button>';
-          }).join('') + '</div>';
-      }
       card.innerHTML = html;
       card.dataset.word = word;
       resultDiv.appendChild(card);
@@ -375,15 +342,6 @@
 
   /* ---------- card actions ---------- */
   resultDiv.addEventListener('click', function (e) {
-    var chip = e.target.closest('.related-word');
-    if (chip && chip.dataset.word) {
-      var w = chip.dataset.word;
-      searchInput.value = w;
-      clearBtn.classList.add('show');
-      setDirection(isAssamese(w) ? 'asToEn' : 'enToAs');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
     var btn = e.target.closest('button[data-act]');
     if (!btn) return;
     var card = btn.closest('.word-card');
