@@ -80,14 +80,6 @@
   }
   #clearBtn.show { display:flex; }
 
-  .pills { display:flex; gap:8px; }
-  .pills button {
-    flex:1; padding:10px 4px; border-radius:999px; border:1px solid var(--border);
-    background:transparent; color:var(--muted); font-family:inherit;
-    font-size:13px; font-weight:700; cursor:pointer; transition:all .15s ease;
-  }
-  .pills button.active { background:var(--accent); border-color:var(--accent); color:#fff; }
-
   /* ---------- results ---------- */
   .wrap { max-width:640px; margin:0 auto; padding:16px 16px 40px; }
   .result-meta { font-size:13px; color:var(--muted); margin:2px 2px 12px; }
@@ -152,11 +144,6 @@
         placeholder="Search for an English word..." enterkeyhint="search">
       <button id="clearBtn" aria-label="Clear search"><i class="fas fa-times"></i></button>
     </div>
-    <div class="pills" id="typePills">
-      <button class="active" data-type="exact">Exact</button>
-      <button data-type="contains">Contains</button>
-      <button data-type="starts">Starts with</button>
-    </div>
   </div>
 </div>
 
@@ -184,7 +171,6 @@
   var allWords = [];
   var dataReady = false;
   var searchDirection = 'enToAs';
-  var searchType = 'exact';
 
   function $(id) { return document.getElementById(id); }
   var searchInput = $('searchInput'), resultDiv = $('result'),
@@ -262,15 +248,6 @@
   document.querySelectorAll('#dirSeg button').forEach(function (b) {
     b.addEventListener('click', function () { setDirection(b.dataset.dir); });
   });
-  document.querySelectorAll('#typePills button').forEach(function (b) {
-    b.addEventListener('click', function () {
-      searchType = b.dataset.type;
-      document.querySelectorAll('#typePills button').forEach(function (x) {
-        x.classList.toggle('active', x === b);
-      });
-      rerun();
-    });
-  });
   function rerun() { if (norm(searchInput.value)) showResult(searchInput.value); }
 
   /* ---------- live search ---------- */
@@ -301,9 +278,7 @@
       if (searchDirection === 'enToAs' && wIsAs) return false;
       if (searchDirection === 'asToEn' && !wIsAs) return false;
       var wl = w.toLowerCase();
-      if (searchType === 'exact') return wl === t;
-      if (searchType === 'contains') return wl.indexOf(t) !== -1;
-      return wl.indexOf(t) === 0;
+      return wl.indexOf(t) !== -1; // contains
     });
   }
 
@@ -334,7 +309,7 @@
     var matches = findMatches(t);
     if (!matches.length) {
       resultDiv.innerHTML = "<div class='no-results'><i class='fas fa-search'></i><p>No results for \"<b>" +
-        sanitize(term) + "</b>\"<br>Try Contains or Starts with.</p></div>";
+        sanitize(term) + "</b>\"<br>Check the spelling and try again.</p></div>";
       return;
     }
 
