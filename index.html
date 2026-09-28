@@ -81,7 +81,7 @@
   #clearBtn.show { display:flex; }
 
   /* ---------- results ---------- */
-  .wrap { max-width:640px; margin:0 auto; padding:16px 16px 40px; }
+  .wrap { max-width:640px; margin:0 auto; padding:16px 16px 96px; }
   .result-meta { font-size:13px; color:var(--muted); margin:2px 2px 12px; }
   .word-card {
     background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
@@ -123,7 +123,12 @@
   }
   .toast.show { opacity:1; transform:translate(-50%,0); }
 
-  .foot { text-align:center; color:var(--muted); font-size:13px; padding:24px 16px 40px; }
+  .foot {
+    position:fixed; left:0; right:0; bottom:0; z-index:40;
+    text-align:center; color:var(--muted); font-size:13px;
+    padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+    background:var(--bg); border-top:1px solid var(--border);
+  }
 </style>
 </head>
 <body>
