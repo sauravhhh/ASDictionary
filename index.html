@@ -173,6 +173,7 @@
   var allWords = [];
   var dataReady = false;
   var searchDirection = 'enToAs';
+  var pendingTerm = ''; // search typed before data finished loading
 
   function $(id) { return document.getElementById(id); }
   var searchInput = $('searchInput'), resultDiv = $('result'),
@@ -208,9 +209,6 @@
     d.textContent = str == null ? '' : String(str);
     return d.innerHTML;
   }
-  function escAttr(str) {
-    return sanitize(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-  }
   function norm(s) { return (s == null ? '' : String(s)).replace(/["']/g, '').trim(); }
 
   /* ---------- load data ---------- */
@@ -227,7 +225,8 @@
     var words = res[0].concat(res[1]).filter(function (e) { return e && norm(e.Wrd); });
     allWords = words.length ? words : sampleData;
     dataReady = true;
-    showHint();
+    if (norm(pendingTerm)) { var pt = pendingTerm; pendingTerm = ''; showResult(pt); }
+    else showHint();
   }).catch(function () {
     allWords = sampleData;
     dataReady = true;
@@ -274,26 +273,39 @@
   /* ---------- search ---------- */
   function findMatches(term) {
     var t = norm(term).toLowerCase();
-    if (!t) return [];
-    return allWords.filter(function (e) {
+    var out = { total: 0, items: [] };
+    if (!t) return out;
+    // single pass: count everything, keep only what we will render
+    for (var i = 0; i < allWords.length; i++) {
+      var e = allWords[i];
       var w = norm(e.Wrd);
-      if (!w) return false;
+      if (!w) continue;
       var wIsAs = isAssamese(w);
-      if (searchDirection === 'enToAs' && wIsAs) return false;
-      if (searchDirection === 'asToEn' && !wIsAs) return false;
-      var wl = w.toLowerCase();
-      return wl.indexOf(t) !== -1; // contains
-    });
+      if (searchDirection === 'enToAs' && wIsAs) continue;
+      if (searchDirection === 'asToEn' && !wIsAs) continue;
+      if (w.toLowerCase().indexOf(t) === -1) continue;
+      out.total++;
+      if (out.items.length < MAX_RESULTS) out.items.push(e);
+    }
+    return out;
   }
 
   function showResult(term) {
+    try { doShowResult(term); }
+    catch (err) {
+      resultDiv.innerHTML = "<div class='no-results'><i class='fas fa-exclamation-circle'></i>" +
+        "<p>Something went wrong.<br>Please try again.</p></div>";
+    }
+  }
+
+  function doShowResult(term) {
     resultDiv.innerHTML = "";
-    if (!dataReady) { setLoading(); return; }
+    if (!dataReady) { pendingTerm = term; setLoading(); return; }
     var t = norm(term);
     if (!t) { showHint(); return; }
 
     var matches = findMatches(t);
-    if (!matches.length) {
+    if (!matches.total) {
       resultDiv.innerHTML = "<div class='no-results'><i class='fas fa-search'></i><p>No results for \"<b>" +
         sanitize(term) + "</b>\"<br>Check the spelling and try again.</p></div>";
       return;
@@ -301,10 +313,10 @@
 
     var meta = document.createElement('p');
     meta.className = 'result-meta';
-    meta.textContent = matches.length === 1 ? '1 result' : matches.length + ' results';
+    meta.textContent = matches.total === 1 ? '1 result' : matches.total + ' results';
     resultDiv.appendChild(meta);
 
-    matches.slice(0, MAX_RESULTS).forEach(function (entry) {
+    matches.items.forEach(function (entry) {
       var word = norm(entry.Wrd);
       var pos = [norm(entry.posEng), norm(entry.posAsm)].filter(Boolean).join(' · ');
       var meanings = norm(entry.Meanings).split(',').map(function (m) { return m.trim(); })
@@ -331,11 +343,11 @@
       resultDiv.appendChild(card);
     });
 
-    if (matches.length > MAX_RESULTS) {
+    if (matches.total > MAX_RESULTS) {
       var more = document.createElement('p');
       more.className = 'result-meta';
       more.style.textAlign = 'center';
-      more.textContent = '+' + (matches.length - MAX_RESULTS) + ' more — refine your search.';
+      more.textContent = '+' + (matches.total - MAX_RESULTS) + ' more — refine your search.';
       resultDiv.appendChild(more);
     }
   }
