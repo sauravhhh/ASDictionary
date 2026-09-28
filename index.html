@@ -159,21 +159,14 @@
 (function () {
   'use strict';
 
-  // Real data schema (dict1.json / dict2.json):
-  //   Wrd, posAsm, posEng, IdeaID, Meanings
-  // IdeaID groups synonyms: entries sharing an IdeaID are related words.
-  var sampleData = [
-    { Wrd: "ভাল", posAsm: "বিশেষণ", posEng: "adjective", IdeaID: 1, Meanings: "good, nice, fine, well" },
-    { Wrd: "ঘৰ", posAsm: "বিশেষ্য", posEng: "noun", IdeaID: 3, Meanings: "house, home" },
-    { Wrd: "water", posAsm: "বিশেষ্য", posEng: "noun", IdeaID: 4, Meanings: "পানী, জল" },
-    { Wrd: "love", posAsm: "বিশেষ্য", posEng: "noun", IdeaID: 5, Meanings: "ভালপোৱা, স্নেহ" }
-  ];
-
-  var MAX_RESULTS = 50;
-  var allWords = [];
-  var dataReady = false;
+  // Live dictionary data from the XOBDO API: https://www.xobdo.org/api
+  //   GET /api/dic.php?w=<word>&l=<langId>   (1 = English, 2 = Assamese)
+  // Each entry: { ideaid, grammar, m01, m02, synonyms }
+  var API_URL = 'https://www.xobdo.org/api/dic.php';
+  var MAX_RESULTS = 20;
   var searchDirection = 'enToAs';
-  var pendingTerm = ''; // search typed before data finished loading
+  var searchSeq = 0;      // guards against out-of-order responses
+  var abortCtrl = null;   // cancels the in-flight request when typing continues
 
   function $(id) { return document.getElementById(id); }
   var searchInput = $('searchInput'), resultDiv = $('result'),
@@ -203,35 +196,22 @@
   }
 
   /* ---------- helpers ---------- */
-  function isAssamese(s) { return /[\u0980-\u09FF]/.test(s || ''); }
   function sanitize(str) {
     var d = document.createElement('div');
     d.textContent = str == null ? '' : String(str);
     return d.innerHTML;
   }
-  function norm(s) { return (s == null ? '' : String(s)).replace(/["']/g, '').trim(); }
 
-  /* ---------- load data ---------- */
+  /* ---------- loading / hint / error states ---------- */
   function setLoading() {
     resultDiv.innerHTML = "<div class='loading'><i class='fas fa-spinner'></i></div>" +
-      "<p class='loading-text'>Loading dictionary…</p>";
+      "<p class='loading-text'>Looking up…</p>";
   }
-  setLoading();
-
-  Promise.all([
-    fetch('dict2.json').then(function (r) { if (!r.ok) throw 0; return r.json(); }).catch(function () { return []; }),
-    fetch('dict1.json').then(function (r) { if (!r.ok) throw 0; return r.json(); }).catch(function () { return []; })
-  ]).then(function (res) {
-    var words = res[0].concat(res[1]).filter(function (e) { return e && norm(e.Wrd); });
-    allWords = words.length ? words : sampleData;
-    dataReady = true;
-    if (norm(pendingTerm)) { var pt = pendingTerm; pendingTerm = ''; showResult(pt); }
-    else showHint();
-  }).catch(function () {
-    allWords = sampleData;
-    dataReady = true;
-    showHint();
-  });
+  function showError() {
+    resultDiv.innerHTML = "<div class='no-results'><i class='fas fa-wifi'></i>" +
+      "<p>Couldn't reach the dictionary.<br>Check your connection and try again.</p></div>";
+  }
+  showHint();
 
   function showHint() {
     resultDiv.innerHTML = "<div class='no-results'><i class='fas fa-book-open'></i>" +
@@ -251,7 +231,7 @@
   document.querySelectorAll('#dirSeg button').forEach(function (b) {
     b.addEventListener('click', function () { setDirection(b.dataset.dir); });
   });
-  function rerun() { if (norm(searchInput.value)) showResult(searchInput.value); }
+  function rerun() { if (clean(searchInput.value)) showResult(searchInput.value); }
 
   /* ---------- live search ---------- */
   var debounceT = null;
@@ -271,41 +251,62 @@
   });
 
   /* ---------- search ---------- */
-  function findMatches(term) {
-    var t = norm(term).toLowerCase();
-    var out = { total: 0, items: [] };
-    if (!t) return out;
-    // single pass: count everything, keep only what we will render
-    for (var i = 0; i < allWords.length; i++) {
-      var e = allWords[i];
-      var w = norm(e.Wrd);
-      if (!w) continue;
-      var wIsAs = isAssamese(w);
-      if (searchDirection === 'enToAs' && wIsAs) continue;
-      if (searchDirection === 'asToEn' && !wIsAs) continue;
-      if (w.toLowerCase().indexOf(t) === -1) continue;
-      out.total++;
-      if (out.items.length < MAX_RESULTS) out.items.push(e);
-    }
-    return out;
+  /* ---------- XOBDO API ---------- */
+  function clean(s) { return (s == null ? '' : String(s)).trim(); }
+
+  function apiSearch(term, seq) {
+    if (abortCtrl) { try { abortCtrl.abort(); } catch (e) {} }
+    abortCtrl = new AbortController();
+    var langId = searchDirection === 'enToAs' ? '1' : '2';
+    var url = API_URL + '?w=' + encodeURIComponent(term) + '&l=' + langId;
+    return fetch(url, { signal: abortCtrl.signal }).then(function (r) {
+      if (!r.ok) throw new Error('bad status');
+      return r.json();
+    }).then(function (data) {
+      if (seq !== searchSeq) return null; // a newer search took over
+      var out = [];
+      var seen = {};
+      var qws = (data && data.querywords) || [];
+      for (var i = 0; i < qws.length; i++) {
+        var qw = qws[i] || {};
+        var word = clean(qw.queryword && qw.queryword.word) || term;
+        var entries = (qw.result && qw.result.entries) || [];
+        for (var j = 0; j < entries.length; j++) {
+          var en = entries[j] || {};
+          var key = String(en.ideaid || '') + '|' + word;
+          if (seen[key]) continue;
+          seen[key] = 1;
+          out.push({ word: word, grammar: clean(en.grammar), m01: clean(en.m01), m02: clean(en.m02) });
+          if (out.length >= MAX_RESULTS) break;
+        }
+        if (out.length >= MAX_RESULTS) break;
+      }
+      return out;
+    });
   }
 
   function showResult(term) {
-    try { doShowResult(term); }
-    catch (err) {
-      resultDiv.innerHTML = "<div class='no-results'><i class='fas fa-exclamation-circle'></i>" +
-        "<p>Something went wrong.<br>Please try again.</p></div>";
+    var t = clean(term);
+    if (!t) {
+      if (abortCtrl) { try { abortCtrl.abort(); } catch (e) {} }
+      showHint();
+      return;
     }
+    var seq = ++searchSeq;
+    setLoading();
+    apiSearch(t, seq).then(function (entries) {
+      if (entries === null || seq !== searchSeq) return; // superseded
+      renderEntries(t, entries);
+    }).catch(function (err) {
+      if (err && err.name === 'AbortError') return;
+      if (seq !== searchSeq) return;
+      showError();
+    });
   }
 
-  function doShowResult(term) {
+  function renderEntries(term, entries) {
     resultDiv.innerHTML = "";
-    if (!dataReady) { pendingTerm = term; setLoading(); return; }
-    var t = norm(term);
-    if (!t) { showHint(); return; }
-
-    var matches = findMatches(t);
-    if (!matches.total) {
+    if (!entries.length) {
       resultDiv.innerHTML = "<div class='no-results'><i class='fas fa-search'></i><p>No results for \"<b>" +
         sanitize(term) + "</b>\"<br>Check the spelling and try again.</p></div>";
       return;
@@ -313,25 +314,21 @@
 
     var meta = document.createElement('p');
     meta.className = 'result-meta';
-    meta.textContent = matches.total === 1 ? '1 result' : matches.total + ' results';
+    meta.textContent = entries.length === 1 ? '1 result' : entries.length + ' results';
     resultDiv.appendChild(meta);
 
-    matches.items.forEach(function (entry) {
-      var word = norm(entry.Wrd);
-      var pos = [norm(entry.posEng), norm(entry.posAsm)].filter(Boolean).join(' · ');
-      var meanings = norm(entry.Meanings).split(',').map(function (m) { return m.trim(); })
-        .filter(Boolean);
-
+    entries.forEach(function (entry) {
+      var meanings = [entry.m01, entry.m02].filter(Boolean);
       var card = document.createElement('div');
       card.className = 'word-card';
       var html =
         '<div class="word-header">' +
-          '<div class="word-title">' + sanitize(word) + '</div>' +
+          '<div class="word-title">' + sanitize(entry.word) + '</div>' +
           '<div class="word-actions">' +
             '<button title="Share" aria-label="Share" data-act="share"><i class="fas fa-share-alt"></i></button>' +
           '</div>' +
         '</div>' +
-        (pos ? '<div class="word-type">' + sanitize(pos) + '</div>' : '') +
+        (entry.grammar ? '<div class="word-type">' + sanitize(entry.grammar) + '</div>' : '') +
         '<div class="section-title"><i class="fas fa-book"></i>Meanings</div>' +
         (meanings.length
           ? '<ul class="definition-list">' + meanings.map(function (m) {
@@ -339,17 +336,9 @@
             }).join('') + '</ul>'
           : '<div style="color:var(--muted)">No meanings listed.</div>');
       card.innerHTML = html;
-      card.dataset.word = word;
+      card.dataset.word = entry.word;
       resultDiv.appendChild(card);
     });
-
-    if (matches.total > MAX_RESULTS) {
-      var more = document.createElement('p');
-      more.className = 'result-meta';
-      more.style.textAlign = 'center';
-      more.textContent = '+' + (matches.total - MAX_RESULTS) + ' more — refine your search.';
-      resultDiv.appendChild(more);
-    }
   }
 
   /* ---------- card actions ---------- */
