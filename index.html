@@ -6,6 +6,14 @@
 <title>অর্থ - Assamese Dictionary</title>
 <meta name="description" content="অর্থ — a fast, mobile-friendly English-Assamese and Assamese-English dictionary.">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#e12d39">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="অর্থ">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   :root {
@@ -370,6 +378,12 @@
     } else {
       prompt('Copy to share:', text + ' ' + url);
     }
+  }
+  // Register service worker for installable PWA + offline use
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function () {});
+    });
   }
 })();
 </script>
