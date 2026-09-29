@@ -377,15 +377,23 @@
     lines.push('— via অর্থ Assamese Dictionary');
     var text = lines.join('\n');
     var url = window.location.href;
+    var fullText = text + '\n' + url;
+    function copyFallback() {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(fullText).then(
+          function () { toast('Copied to clipboard'); },
+          function () { prompt('Copy this text:', fullText); });
+      } else {
+        prompt('Copy this text:', fullText);
+      }
+    }
     if (navigator.share) {
-      navigator.share({ title: 'অর্থ - Assamese Dictionary', text: text, url: url })
-        .catch(function () {});
-    } else if (navigator.clipboard) {
-      navigator.clipboard.writeText(text + ' ' + url).then(
-        function () { toast('Copied to clipboard'); },
-        function () { prompt('Copy to share:', text + ' ' + url); });
+      try {
+        navigator.share({ title: 'অর্থ - Assamese Dictionary', text: text, url: url })
+          .catch(function () { copyFallback(); });
+      } catch (e) { copyFallback(); }
     } else {
-      prompt('Copy to share:', text + ' ' + url);
+      copyFallback();
     }
   }
   // Register service worker for installable PWA + offline use
