@@ -350,6 +350,7 @@
           : '<div style="color:var(--muted)">No meanings listed.</div>');
       card.innerHTML = html;
       card.dataset.word = entry.word;
+      card.dataset.meanings = JSON.stringify(meanings);
       resultDiv.appendChild(card);
     });
   }
@@ -361,12 +362,20 @@
     var card = btn.closest('.word-card');
     var word = card ? card.dataset.word : '';
     if (!word) return;
+    var meanings = [];
+    try { meanings = JSON.parse(card.dataset.meanings || '[]'); } catch (e) { meanings = []; }
     var act = btn.dataset.act;
-    if (act === 'share') shareWord(word);
+    if (act === 'share') shareWord(word, meanings);
   });
 
-  function shareWord(word) {
-    var text = 'Meaning of "' + word + '" — অর্থ Assamese Dictionary';
+  function shareWord(word, meanings) {
+    var lines = ['"' + word + '"'];
+    (meanings || []).slice(0, 5).forEach(function (m, i) {
+      if (m) lines.push((i + 1) + '. ' + m);
+    });
+    lines.push('');
+    lines.push('— via অর্থ Assamese Dictionary');
+    var text = lines.join('\n');
     var url = window.location.href;
     if (navigator.share) {
       navigator.share({ title: 'অর্থ - Assamese Dictionary', text: text, url: url })
